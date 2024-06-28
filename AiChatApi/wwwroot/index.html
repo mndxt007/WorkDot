@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Recorder</title>
+</head>
+<body>
+    <h1>Audio Recorder</h1>
+    <button id="recordButton">Click to Record</button>
+    <p id="recognizedText"></p>
+
+    <script type="module">
+        import { MediaRecorder, register } from 'https://jspm.dev/extendable-media-recorder';
+        import { connect } from 'https://jspm.dev/extendable-media-recorder-wav-encoder';
+
+        const recordButton = document.getElementById('recordButton');
+        const recognizedTextElement = document.getElementById('recognizedText');
+        const socket = new WebSocket('wss://localhost:7083/ws'); // Update with your WebSocket endpoint
+        let isRecording = false;
+        let chunks = [];
+        let mediaRecorder;
+        let stream;
+
+        // Handle WebSocket connection
+        socket.onopen = () => {
+            console.log('WebSocket connection established.');
+        };
+
+        socket.onerror = (error) => {
+            console.log('WebSocket error:', error);
+        };
+
+        socket.onmessage = (event) => {
+            const recognizedText = event.data;
+            recognizedTextElement.textContent = recognizedText;
+        };
+
+        // Request audio stream once
+        async function getMediaStream() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                await register(await connect());
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/wav' });
+                mediaRecorder.addEventListener('dataavailable', ({ data }) => {
+                    chunks.push(data);
+                });
+                mediaRecorder.addEventListener('stop', () => {
+                    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+                    chunks = [];
+
+                    // Send the audio data as binary
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const arrayBuffer = reader.result;
+                        socket.send(arrayBuffer);
+                    };
+                    reader.readAsArrayBuffer(blob);
+                });
+            } catch (error) {
+                console.error('Error accessing audio devices:', error);
+            }
+        }
+
+        getMediaStream();
+
+        function startRecording() {
+            if (!mediaRecorder) {
+                console.error('MediaRecorder is not available.');
+                return;
+            }
+            mediaRecorder.start();
+            console.log('Recording started.');
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                console.log('Recording stopped.');
+            }
+        }
+
+        recordButton.addEventListener('click', () => {
+            if (!isRecording) {
+                // Start recording
+                chunks = [];
+                startRecording();
+                isRecording = true;
+                recordButton.textContent = 'Recording...';
+            } else {
+                // Stop recording
+                stopRecording();
+                isRecording = false;
+                recordButton.textContent = 'Hold to Record';
+            }
+        });
+
+        recordButton.addEventListener('touchstart', (event) => {
+            event.preventDefault(); // Prevents 'click' event after 'touchstart'
+            if (!isRecording) {
+                // Start recording
+                chunks = [];
+                startRecording();
+                isRecording = true;
+                recordButton.textContent = 'Recording...';
+            }
+        });
+
+        recordButton.addEventListener('touchend', (event) => {
+            event.preventDefault(); // Prevents 'click' event after 'touchend'
+            if (isRecording) {
+                // Stop recording
+                stopRecording();
+                isRecording = false;
+                recordButton.textContent = 'Hold to Record';
+            }
+        });
+    </script>
+</body>
+</html>
