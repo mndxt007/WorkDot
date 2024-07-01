@@ -48,13 +48,9 @@ namespace AiChatApi.Controllers
                     do
                     {
                         result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                        if(result.MessageType == WebSocketMessageType.Text)
-                        {
-                            break;
-                        }
                         memoryStream.Write(buffer, 0, result.Count);
                         count++;
-                    } while (true);
+                    } while (!result.EndOfMessage);
 
                     var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\wavfiles\\", $"audio_{DateTime.Now.Ticks}.wav");
 
@@ -67,12 +63,10 @@ namespace AiChatApi.Controllers
                     if (header != "RIFF")
                     {
                         memoryStream.Seek(0, SeekOrigin.Begin); // Reset the stream position
-                        var rs = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 16, 1));
-                        var ws = new WaveFileWriter(filePath, rs.WaveFormat);
+                        var totalSampleCount = memoryStream.Length * 8 / 16; // Example calculation, adjust as necessary
+                        MemoryStreamExtensions.WriteWavHeader(memoryStream, false, 1, 16, 16000, (int)totalSampleCount, 0);
                     }
 
-                    else
-                    {
                         memoryStream.Seek(0, SeekOrigin.Begin);
 
                         //Save the audio file for debugging
@@ -82,8 +76,6 @@ namespace AiChatApi.Controllers
                         {
                             memoryStream.CopyTo(fileStream);
                         }
-                    }
-
                     
 
                     var speechText = await ConvertSpeechToText(filePath);
