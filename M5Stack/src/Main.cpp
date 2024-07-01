@@ -103,7 +103,7 @@ void setup()
         {
             //client.send("Hi Server!");
             // Send a ping
-            client.ping();
+            //client.ping();
             xTaskCreatePinnedToCore(ButtonRead, "task2", 4096, NULL, tskIDLE_PRIORITY, NULL, 0);
         }
         // Send a message
@@ -172,13 +172,15 @@ void ButtonRead(void *pvParameters)
                 if (data_offset == 1024 * 4)
                 {
                     Serial.println("Sending buffer");
-                    client.sendBinary(microphonedata0, 1024 * 4);
+                    client.sendBinary(microphonedata0);
+                    //client.sendBinary(microphonedata0, 1024 * 4);
                     data_offset=0;
                 }
                 if (M5.BtnA.wasReleasefor(1000))
                 {
                     M5.Lcd.setCursor(0, 120);
                     // Serial.print("buffer exceeded? - ");
+                    client.send("End");
                     Serial.println("ButtonA released");
                     M5.Lcd.printf("Out of while loop");
                     break;

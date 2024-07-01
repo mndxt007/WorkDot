@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
+using NAudio.Wave;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -43,22 +44,47 @@ namespace AiChatApi.Controllers
 
                     using var memoryStream = new MemoryStream();
                     WebSocketReceiveResult result;
-
+                    int count = 0;
                     do
                     {
                         result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                        if(result.MessageType == WebSocketMessageType.Text)
+                        {
+                            break;
+                        }
                         memoryStream.Write(buffer, 0, result.Count);
-                    } while (!result.EndOfMessage);
+                        count++;
+                    } while (true);
 
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-
-                    //Save the audio file for debugging
                     var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\wavfiles\\", $"audio_{DateTime.Now.Ticks}.wav");
 
-                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    var headerBytes = new byte[4];
+                    await memoryStream.ReadAsync(headerBytes, 0, 4);
+                    var header = Encoding.ASCII.GetString(headerBytes);
+
+                    // If not, add a WAV header
+                    if (header != "RIFF")
                     {
-                        memoryStream.CopyTo(fileStream);
+                        memoryStream.Seek(0, SeekOrigin.Begin); // Reset the stream position
+                        var rs = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 16, 1));
+                        var ws = new WaveFileWriter(filePath, rs.WaveFormat);
                     }
+
+                    else
+                    {
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+
+                        //Save the audio file for debugging
+
+
+                        using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                        {
+                            memoryStream.CopyTo(fileStream);
+                        }
+                    }
+
+                    
 
                     var speechText = await ConvertSpeechToText(filePath);
                     var textBuffer = Encoding.UTF8.GetBytes(speechText);
@@ -122,6 +148,24 @@ namespace AiChatApi.Controllers
                 _logger.LogError(ex.ToString());
                 return "Speech recognition failed due to an exception.";
             }
+        }
+    }
+
+    static class MemoryStreamExtensions
+    {
+        public static void WriteWavHeader(this MemoryStream stream, bool isFloatingPoint, ushort channelCount, ushort bitDepth, int sampleRate, int totalSampleCount, int dataChunkSize)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+
+            // RIFF header
+            stream.Write(Encoding.ASCII.GetBytes("RIFF"), 0, 4);
+            stream.Write(BitConverter.GetBytes(36 + dataChunkSize), 0, 4);
+            stream.Write(Encoding.ASCII.GetBytes("WAVE"), 0, 4);
+
+            // Format chunk
+            stream.Write(Encoding.ASCII.GetBytes("fmt "), 0, 4);
+            stream.Write(BitConverter.GetBytes(16), 0, 4); // Format chunk length
+            stream.Write(BitConverter.GetBytes((ushort)(isFloatingPoint ? 3 : 1)), 0, 2); // Data format (3 for IEEE float,
         }
     }
 }
