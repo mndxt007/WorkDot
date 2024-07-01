@@ -53,7 +53,7 @@ namespace AiChatApi.Controllers
                     memoryStream.Seek(0, SeekOrigin.Begin);
 
                     //Save the audio file for debugging
-                    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot", $"audio_{DateTime.Now.Ticks}.wav");
+                    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\wavfiles\\", $"audio_{DateTime.Now.Ticks}.wav");
 
                     using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
                     {
