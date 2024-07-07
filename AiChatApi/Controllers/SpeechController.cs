@@ -2,6 +2,7 @@
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using NAudio.Wave;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -62,11 +63,12 @@ namespace AiChatApi.Controllers
                     // If not, add a WAV header
                     if (header != "RIFF")
                     {
-                        memoryStream.Seek(0, SeekOrigin.Begin); // Reset the stream position
-                        var totalSampleCount = memoryStream.Length * 8 / 16; // Example calculation, adjust as necessary
-                        MemoryStreamExtensions.WriteWavHeader(memoryStream, false, 1, 16, 16000, (int)totalSampleCount, 0);
+                        var s = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
+                        WaveFileWriter.CreateWaveFile(filePath, s);
                     }
 
+                    else
+                    {
                         memoryStream.Seek(0, SeekOrigin.Begin);
 
                         //Save the audio file for debugging
@@ -76,6 +78,8 @@ namespace AiChatApi.Controllers
                         {
                             memoryStream.CopyTo(fileStream);
                         }
+                    }
+                        
                     
 
                     var speechText = await ConvertSpeechToText(filePath);

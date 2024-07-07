@@ -3,6 +3,7 @@
 #include "Startup\Startup.h"
 #include "Audio\I2SMEMSSampler.h"
 #include <HTTPClient.h>
+#include <WebSocketsClient.h>
 
 // defines
 //================
@@ -13,24 +14,39 @@
 WiFiManager wm;
 I2SSampler *i2sSampler = nullptr;
 HTTPClient httpClient;
+WebSocketsClient webSocket;
 const int SAMPLE_SIZE = 16384;
 int16_t *samples = nullptr;
+uint8_t wavHeader[44];
 
 // Methods Declaration
 //===================
 void user_made_log_callback(esp_log_level_t, bool, const char *);
-void sendData(uint8_t *bytes, size_t count);
+void sendDataHttp(uint8_t *bytes, size_t count);
+void sendDataW(bool first, bool last, uint8_t *bytes, size_t count);
 void quickVibrate();
+void webSocketEvent(WStype_t type, uint8_t *payload, size_t length);
 
 // Arduino Methods
+//==================
 void setup(void)
 {
     auto cfg = M5.config();
     M5.begin(cfg);
     setupLogging();
-    setupWifiManager(wm); //used the samples from https://dronebotworkshop.com/wifimanager/
-    setupAudio(i2sSampler); //fork of https://github.com/atomic14/esp32_audio/tree/master
-    // Allocate samples
+    if(setupWifiManager(wm))  // used the samples from https://dronebotworkshop.com/wifimanager/
+    {
+        M5.Log(ESP_LOG_DEBUG, "Setting up Websockets");
+        webSocket.onEvent(webSocketEvent);
+        webSocket.begin("192.168.1.7", 5189, "/ws");
+        //To-do - Remove hard coding
+        webSocket.setReconnectInterval(5000);
+    }
+    setupAudio(i2sSampler); // fork of https://github.com/atomic14/esp32_audio/tree/master
+
+    // Audio Setup
+    //=======================
+    // Create the samples buffer
     samples = (int16_t *)malloc(sizeof(uint16_t) * SAMPLE_SIZE);
     if (!samples)
     {
@@ -41,17 +57,22 @@ void setup(void)
 void loop(void)
 {
     M5.update();
+    webSocket.loop();
     if (M5.BtnA.wasHold())
     {
         quickVibrate();
         M5.Log(ESP_LOG_INFO, "Recording Started....");
+        int samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
+        sendDataW(true, false,(uint8_t *)samples, samples_read * sizeof(uint16_t));
         while (!M5.BtnB.wasHold())
         {
-            int samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
-            sendData((uint8_t *)samples, samples_read * sizeof(uint16_t));
+            samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
+            sendDataW(false,false,(uint8_t *)samples, samples_read * sizeof(uint16_t));
             M5.Log(ESP_LOG_INFO, "....");
             M5.update();
+            webSocket.loop();
         }
+        sendDataW(false,true,(uint8_t *)samples, 0);
         M5.Log(ESP_LOG_INFO, "Recording Ended.");
         quickVibrate();
     }
@@ -76,7 +97,12 @@ if (SD.begin(GPIO_NUM_4, SPI, 25000000))
 #endif
 }
 
-void sendData(uint8_t *bytes, size_t count)
+void sendDataW(bool first, bool last, uint8_t *bytes, size_t count)
+{
+    webSocket.sendBIN(first, last,bytes, count, false);
+}
+
+void sendDataHttp(uint8_t *bytes, size_t count)
 {
     // send them off to the server
     httpClient.begin(SERVER_URL);
@@ -86,7 +112,6 @@ void sendData(uint8_t *bytes, size_t count)
     httpClient.end();
 }
 
-
 void quickVibrate()
 {
     M5.Power.setVibration(250);
@@ -94,7 +119,30 @@ void quickVibrate()
     M5.Power.setVibration(0);
 }
 
-
+void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
+{
+    switch (type)
+    {
+    case WStype_DISCONNECTED:
+        M5.Log(ESP_LOG_ERROR, "[WSc] Disconnected!\n");
+        break;
+    case WStype_CONNECTED:
+       M5.Log(ESP_LOG_INFO, "[WSc] Connected to url: %s\n", payload);
+        break;
+    case WStype_TEXT:
+        M5.Log(ESP_LOG_INFO,"Response: %s\n", payload);
+        break;
+    case WStype_BIN:
+        // Handle binary data if needed
+        break;
+    case WStype_ERROR:
+    case WStype_FRAGMENT_TEXT_START:
+    case WStype_FRAGMENT_BIN_START:
+    case WStype_FRAGMENT:
+    case WStype_FRAGMENT_FIN:
+        break;
+    }
+}
 
 /// for ESP-IDF
 #if !defined(ARDUINO) && defined(ESP_PLATFORM)

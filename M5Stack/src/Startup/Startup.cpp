@@ -74,7 +74,7 @@ void setupLogging()
     // M5.Log.printf("M5.Log.printf non level output\n");
 }
 
-void setupWifiManager(WiFiManager &wm)
+bool setupWifiManager(WiFiManager &wm)
 {
     // sample - https://dronebotworkshop.com/wifimanager/
     // To do - On demand Autoconfig - https://github.com/tzapu/WiFiManager/tree/master/examples/OnDemand
@@ -88,6 +88,7 @@ void setupWifiManager(WiFiManager &wm)
     {
         M5.Log(ESP_LOG_INFO, "Wifi Connected!");
     }
+    return res;
 }
 
 void setupAudio(I2SSampler *&i2sSampler)
