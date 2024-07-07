@@ -1,47 +1,100 @@
 #include <M5Unified.h>
 #include <WiFiManager.h>
 #include "Startup\Startup.h"
-
+#include "Audio\I2SMEMSSampler.h"
+#include <HTTPClient.h>
 
 // defines
-#define SERVER_URL "http://192.168.1.7:5025/i2s_samples"
+//================
+#define SERVER_URL "https://192.168.1.7:7083/i2s_samples"
 
 // globals
+//==================
 WiFiManager wm;
+I2SSampler *i2sSampler = nullptr;
+HTTPClient httpClient;
+const int SAMPLE_SIZE = 16384;
+int16_t *samples = nullptr;
 
 // Methods Declaration
+//===================
 void user_made_log_callback(esp_log_level_t, bool, const char *);
+void sendData(uint8_t *bytes, size_t count);
+void quickVibrate();
 
+// Arduino Methods
 void setup(void)
 {
-    M5.begin();
+    auto cfg = M5.config();
+    M5.begin(cfg);
     setupLogging();
-    setupWifiManager(wm);
+    setupWifiManager(wm); //used the samples from https://dronebotworkshop.com/wifimanager/
+    setupAudio(i2sSampler); //fork of https://github.com/atomic14/esp32_audio/tree/master
+    // Allocate samples
+    samples = (int16_t *)malloc(sizeof(uint16_t) * SAMPLE_SIZE);
+    if (!samples)
+    {
+        M5.Log(ESP_LOG_ERROR, "Failed to allocate memory for samples");
+    }
 }
 
 void loop(void)
 {
     M5.update();
+    if (M5.BtnA.wasHold())
+    {
+        quickVibrate();
+        M5.Log(ESP_LOG_INFO, "Recording Started....");
+        while (!M5.BtnB.wasHold())
+        {
+            int samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
+            sendData((uint8_t *)samples, samples_read * sizeof(uint16_t));
+            M5.Log(ESP_LOG_INFO, "....");
+            M5.update();
+        }
+        M5.Log(ESP_LOG_INFO, "Recording Ended.");
+        quickVibrate();
+    }
+    M5.delay(200);
 }
 
-//Method Definition
-
+// Method Definition
+//===================================
 void user_made_log_callback(esp_log_level_t log_level, bool use_color, const char *log_text)
 {
-    // You can also create your own callback function to output log contents to a file,WiFi,and more other destination
-
+// You can also create your own callback function to output log contents to a file,WiFi,and more other destination
 #if defined(ARDUINO)
 /*
-  if (SD.begin(GPIO_NUM_4, SPI, 25000000))
-  {
+if (SD.begin(GPIO_NUM_4, SPI, 25000000))
+{
     auto file = SD.open("/logfile.txt", FILE_APPEND);
     file.print(log_text);
     file.close();
     SD.end();
-  }
+}
 //*/
 #endif
 }
+
+void sendData(uint8_t *bytes, size_t count)
+{
+    // send them off to the server
+    httpClient.begin(SERVER_URL);
+    httpClient.addHeader("content-type", "application/octet-stream");
+    // see if the above 2 lines are necessary every time.
+    httpClient.POST(bytes, count);
+    httpClient.end();
+}
+
+
+void quickVibrate()
+{
+    M5.Power.setVibration(250);
+    M5.delay(100);
+    M5.Power.setVibration(0);
+}
+
+
 
 /// for ESP-IDF
 #if !defined(ARDUINO) && defined(ESP_PLATFORM)
@@ -63,5 +116,3 @@ extern "C"
     }
 }
 #endif
-
-

@@ -2,6 +2,26 @@
 #include <WiFiManager.h>
 #include <Secrets.h>
 #include "Startup.h"
+#include "Audio\I2SMEMSSampler.h"
+#include "Audio\I2SSampler.h"
+
+//audio config
+i2s_config_t i2s_config = {
+    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM),
+    .sample_rate = 32000,
+    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+    .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
+    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+    .dma_buf_count = 4,
+    .dma_buf_len = 1024,
+};
+
+// i2s pins
+i2s_pin_config_t i2sPins = {.bck_io_num = GPIO_NUM_12,
+                             .ws_io_num = GPIO_NUM_0,
+                             .data_out_num = I2S_PIN_NO_CHANGE,
+                             .data_in_num = GPIO_NUM_34};
 
 void setupLogging()
 {
@@ -68,4 +88,11 @@ void setupWifiManager(WiFiManager &wm)
     {
         M5.Log(ESP_LOG_INFO, "Wifi Connected!");
     }
+}
+
+void setupAudio(I2SSampler *&i2sSampler)
+{
+    i2s_driver_uninstall(I2S_NUM_0);
+    i2sSampler = new I2SMEMSSampler(I2S_NUM_0, i2sPins, i2s_config, false);
+    i2sSampler->start();
 }
