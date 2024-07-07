@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
+using NAudio.Wave;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -43,22 +45,42 @@ namespace AiChatApi.Controllers
 
                     using var memoryStream = new MemoryStream();
                     WebSocketReceiveResult result;
-
+                    int count = 0;
                     do
                     {
                         result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                         memoryStream.Write(buffer, 0, result.Count);
+                        count++;
                     } while (!result.EndOfMessage);
 
+                    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\wavfiles\\", $"audio_{DateTime.Now.Ticks}.wav");
+
                     memoryStream.Seek(0, SeekOrigin.Begin);
+                    var headerBytes = new byte[4];
+                    await memoryStream.ReadAsync(headerBytes, 0, 4);
+                    var header = Encoding.ASCII.GetString(headerBytes);
 
-                    //Save the audio file for debugging
-                    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot", $"audio_{DateTime.Now.Ticks}.wav");
-
-                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                    // If not, add a WAV header
+                    if (header != "RIFF")
                     {
-                        memoryStream.CopyTo(fileStream);
+                        var s = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
+                        WaveFileWriter.CreateWaveFile(filePath, s);
                     }
+
+                    else
+                    {
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+
+                        //Save the audio file for debugging
+
+
+                        using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                        {
+                            memoryStream.CopyTo(fileStream);
+                        }
+                    }
+                        
+                    
 
                     var speechText = await ConvertSpeechToText(filePath);
                     var textBuffer = Encoding.UTF8.GetBytes(speechText);

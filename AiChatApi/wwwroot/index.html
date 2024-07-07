@@ -16,7 +16,7 @@
 
         const recordButton = document.getElementById('recordButton');
         const recognizedTextElement = document.getElementById('recognizedText');
-        const socket = new WebSocket('wss://localhost:7083/ws'); // Update with your WebSocket endpoint
+        const socket = new WebSocket('ws://localhost:5189/ws'); // Update with your WebSocket endpoint
         let isRecording = false;
         let chunks = [];
         let mediaRecorder;
