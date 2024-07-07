@@ -18,6 +18,7 @@ WebSocketsClient webSocket;
 const int SAMPLE_SIZE = 16384;
 int16_t *samples = nullptr;
 uint8_t wavHeader[44];
+static TaskHandle_t wsTaskHandle = NULL;
 
 // Methods Declaration
 //===================
@@ -26,6 +27,7 @@ void sendDataHttp(uint8_t *bytes, size_t count);
 void sendDataW(bool first, bool last, uint8_t *bytes, size_t count);
 void quickVibrate();
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length);
+void webSocketTask(void *parameter);
 
 // Arduino Methods
 //==================
@@ -52,12 +54,16 @@ void setup(void)
     {
         M5.Log(ESP_LOG_ERROR, "Failed to allocate memory for samples");
     }
+
+    //Tasks
+    //=====================
+    xTaskCreate(webSocketTask, "WebSocketTask", 4096, NULL, 1, &wsTaskHandle);
 }
 
 void loop(void)
 {
     M5.update();
-    webSocket.loop();
+    //webSocket.loop();
     if (M5.BtnA.wasHold())
     {
         quickVibrate();
@@ -70,7 +76,7 @@ void loop(void)
             sendDataW(false,false,(uint8_t *)samples, samples_read * sizeof(uint16_t));
             M5.Log(ESP_LOG_INFO, "....");
             M5.update();
-            webSocket.loop();
+            //webSocket.loop();
         }
         sendDataW(false,true,(uint8_t *)samples, 0);
         M5.Log(ESP_LOG_INFO, "Recording Ended.");
@@ -127,7 +133,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         M5.Log(ESP_LOG_ERROR, "[WSc] Disconnected!\n");
         break;
     case WStype_CONNECTED:
-       M5.Log(ESP_LOG_INFO, "[WSc] Connected to url: %s\n", payload);
+       M5.Log(ESP_LOG_INFO, "Server Connected");
         break;
     case WStype_TEXT:
         M5.Log(ESP_LOG_INFO,"Response: %s\n", payload);
@@ -141,6 +147,13 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
     case WStype_FRAGMENT:
     case WStype_FRAGMENT_FIN:
         break;
+    }
+}
+
+void webSocketTask(void *parameter) {
+    while (true) {
+        webSocket.loop();
+        vTaskDelay(10 / portTICK_PERIOD_MS);  // Adjust delay as needed
     }
 }
 

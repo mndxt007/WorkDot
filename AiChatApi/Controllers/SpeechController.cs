@@ -146,22 +146,4 @@ namespace AiChatApi.Controllers
             }
         }
     }
-
-    static class MemoryStreamExtensions
-    {
-        public static void WriteWavHeader(this MemoryStream stream, bool isFloatingPoint, ushort channelCount, ushort bitDepth, int sampleRate, int totalSampleCount, int dataChunkSize)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
-
-            // RIFF header
-            stream.Write(Encoding.ASCII.GetBytes("RIFF"), 0, 4);
-            stream.Write(BitConverter.GetBytes(36 + dataChunkSize), 0, 4);
-            stream.Write(Encoding.ASCII.GetBytes("WAVE"), 0, 4);
-
-            // Format chunk
-            stream.Write(Encoding.ASCII.GetBytes("fmt "), 0, 4);
-            stream.Write(BitConverter.GetBytes(16), 0, 4); // Format chunk length
-            stream.Write(BitConverter.GetBytes((ushort)(isFloatingPoint ? 3 : 1)), 0, 2); // Data format (3 for IEEE float,
-        }
-    }
 }
