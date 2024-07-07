@@ -1,217 +1,133 @@
-/*
-*******************************************************************************
-* Copyright (c) 2021 by M5Stack
-*                  Equipped with M5Core2 sample source code
-*                          配套  M5Core2 示例源代码
-* Visit for more information: https://docs.m5stack.com/en/core/core2
-* 获取更多资料请访问: https://docs.m5stack.com/zh_CN/core/core2
-*
-* Describe: BasicHTTPClient.
-* Date: 2021/8/4
-******************************************************************************
-*/
-#include <M5Core2.h>
-#include <Arduino.h>
-// #include <WiFi.h>
-// #include <WiFiMulti.h>
-#include <HTTPClient.h>
-#include <Secrets.h>
+#include <M5Unified.h>
 #include <WiFiManager.h>
-#include <ArduinoWebsockets.h>
-using namespace websockets;
+#include <Secrets.h>
 
-// WiFiMulti wifiMulti;
-HTTPClient http;
-WiFiManagerParameter custom_text_box("GET_URL", "Enter the GET URL", "http://example.com/index.html", 50);
-char microphonedata0[1024 * 4];
-int data_offset = 0;
-bool ranAlready = true;
-const char *websockets_server = "192.168.1.7";
-const int port = 5189;
-const char *path = "/ws";
-WebsocketsClient client;
+// defines
+#define SERVER_URL "http://192.168.1.7:5025/i2s_samples"
 
-void HttpTest();
-void ButtonRead(void *pvParameters);
-void DisplayInit();
+// globals
+WiFiManager wm;
 
-void onMessageCallback(WebsocketsMessage message)
+// Methods Declaration
+void user_made_log_callback(esp_log_level_t, bool, const char *);
+void setupLogging();
+void setupWifiManager();
+
+void setup(void)
 {
-    Serial.print("Got Message: ");
-    Serial.println(message.data());
-    M5.Lcd.setCursor(0, 320);
-    M5.Lcd.setTextSize(1);
-    M5.Lcd.println(message.data());
+    M5.begin();
+    setupLogging();
+    setupWifiManager();
 }
 
-void onEventsCallback(WebsocketsEvent event, String data)
+void loop(void)
 {
-    if (event == WebsocketsEvent::ConnectionOpened)
-    {
-        Serial.println("Connnection Opened");
-    }
-    else if (event == WebsocketsEvent::ConnectionClosed)
-    {
-        Serial.println("Connnection Closed");
-    }
-    else if (event == WebsocketsEvent::GotPing)
-    {
-        Serial.println("Got a Ping!");
-    }
-    else if (event == WebsocketsEvent::GotPong)
-    {
-        Serial.println("Got a Pong!");
-    }
+    M5.update();
 }
 
-void setup()
+//Method Definition
+
+void user_made_log_callback(esp_log_level_t log_level, bool use_color, const char *log_text)
 {
-    M5.begin(true, true, true, true, kMBusModeOutput,
-             true);            // Init M5Core2.  初始化 M5Core2
-    //M5.Axp.SetSpkEnable(true); // Enable speaker power.  启用扬声器电源
-    M5.Spk.InitI2SSpeakOrMic(MODE_MIC);
-    DisplayInit();
-    // wifiMulti.addAP("SSID",
-    //                "PASS");  // Storage wifi configuration information. added Wifi Manager
-    M5.Lcd.print("\nConnecting Wifi...\n"); // print format output string on lcd
-    WiFiManager wm;
+    // You can also create your own callback function to output log contents to a file,WiFi,and more other destination
 
-    // reset settings - wipe stored credentials for testing
-    // these are stored by the esp library
-    // wm.resetSettings();
-    wm.addParameter(&custom_text_box);
-    // M5.Buttons.addHandler(StartWifi, )
-    bool res;
-    // res = wm.autoConnect(); // auto generated AP name from chipid
-    // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
-    res = wm.autoConnect(SSID, PASS); // password protected ap
+#if defined(ARDUINO)
+/*
+  if (SD.begin(GPIO_NUM_4, SPI, 25000000))
+  {
+    auto file = SD.open("/logfile.txt", FILE_APPEND);
+    file.print(log_text);
+    file.close();
+    SD.end();
+  }
+//*/
+#endif
+}
 
+/// for ESP-IDF
+#if !defined(ARDUINO) && defined(ESP_PLATFORM)
+extern "C"
+{
+    void loopTask(void *)
+    {
+        setup();
+        for (;;)
+        {
+            loop();
+        }
+        vTaskDelete(NULL);
+    }
+
+    void app_main()
+    {
+        xTaskCreatePinnedToCore(loopTask, "loopTask", 8192, NULL, 1, NULL, 1);
+    }
+}
+#endif
+
+void setupLogging()
+{
+    // refering sample - https://github.com/m5stack/M5Unified/blob/master/examples/Basic/LogOutput/LogOutput.ino
+    M5.setLogDisplayIndex(0);
+    M5.Display.setTextSize(2);
+    /// use wrapping from bottom edge to top edge.
+    M5.Display.setTextWrap(true, true);
+    /// use scrolling.
+    M5.Display.setTextScroll(true);
+
+    /// Example of M5Unified log output class usage.
+    /// Unlike ESP_LOGx, the M5.Log series can output to serial, display, and user callback function in a single line of code.
+
+    /// You can set Log levels for each output destination.
+    /// ESP_LOG_ERROR / ESP_LOG_WARN / ESP_LOG_INFO / ESP_LOG_DEBUG / ESP_LOG_VERBOSE
+    M5.Log.setLogLevel(m5::log_target_serial, ESP_LOG_VERBOSE);
+    M5.Log.setLogLevel(m5::log_target_display, ESP_LOG_INFO);
+    // M5.Log.setLogLevel(m5::log_target_callback, ESP_LOG_INFO);
+
+    /// Set up user-specific callback functions.
+    // M5.Log.setCallback(user_made_log_callback);
+
+    /// You can color the log or not.
+    M5.Log.setEnableColor(m5::log_target_serial, true);
+    M5.Log.setEnableColor(m5::log_target_display, true);
+    M5.Log.setEnableColor(m5::log_target_callback, true);
+
+    /// You can set the text to be added to the end of the log for each output destination.
+    /// ( default value : "\n" )
+    M5.Log.setSuffix(m5::log_target_serial, "\n");
+    M5.Log.setSuffix(m5::log_target_display, "\n");
+    M5.Log.setSuffix(m5::log_target_callback, "\n");
+
+    // `M5.Log()` can be used to output a simple log
+    //   M5.Log(ESP_LOG_ERROR, "M5.Log error log"); /// ERROR level output
+    //   M5.Log(ESP_LOG_WARN    , "M5.Log warn log");     /// WARN level output
+    //   M5.Log(ESP_LOG_INFO    , "M5.Log info log");     /// INFO level output
+    //   M5.Log(ESP_LOG_DEBUG   , "M5.Log debug log");    /// DEBUG level output
+    //   M5.Log(ESP_LOG_VERBOSE , "M5.Log verbose log");  /// VERBOSE level output
+
+    // `M5_LOGx` macro can be used to output a log containing the source file name, line number, and function name.
+    //M5_LOGE("M5_LOGE error log"); /// ERROR level output with source info
+    //   M5_LOGW("M5_LOGW warn log");      /// WARN level output with source info
+    //   M5_LOGI("M5_LOGI info log");      /// INFO level output with source info
+    //   M5_LOGD("M5_LOGD debug log");     /// DEBUG level output with source info
+    //   M5_LOGV("M5_LOGV verbose log");   /// VERBOSE level output with source info
+
+    // `M5.Log.printf()` is output without log level and without suffix and is output to all serial, display, and callback.
+    // M5.Log.printf("M5.Log.printf non level output\n");
+}
+
+void setupWifiManager()
+{
+    // sample - https://dronebotworkshop.com/wifimanager/
+    // To do - On demand Autoconfig - https://github.com/tzapu/WiFiManager/tree/master/examples/OnDemand
+    bool res = wm.autoConnect(SSID, PASS); // password protected AP
     if (!res)
     {
-        Serial.println("Failed to connect");
-        // ESP.restart();
+        M5.Log(ESP_LOG_INFO, "Failed to connect");
+        M5.Log(ESP_LOG_INFO, "Try restarting Core2");
     }
     else
     {
-        // if you get here you have connected to the WiFi
-        Serial.println("connected...yeey :)");
-        client.onMessage(onMessageCallback);
-        client.onEvent(onEventsCallback);
-
-        // Connect to server
-        if (client.connect(websockets_server, port, path))
-        {
-            //client.send("Hi Server!");
-            // Send a ping
-            //client.ping();
-            xTaskCreatePinnedToCore(ButtonRead, "task2", 4096, NULL, tskIDLE_PRIORITY, NULL, 0);
-        }
-        // Send a message
+        M5.Log(ESP_LOG_INFO, "Wifi Connected!");
     }
-}
-
-void loop()
-{
-    client.poll();
-}
-
-void HttpTest()
-{
-    M5.Lcd.setCursor(0, 0); // Set the cursor at (0,0).
-    M5.Lcd.print("[HTTP] begin...\n");
-    http.begin(custom_text_box.getValue()); // configure traged server and url
-    M5.Lcd.print("[HTTP] GET...\n");
-    int httpCode = http.GET(); // start connection and send HTTP header.
-    Serial.println("Going to light sleep for 5 seconds.");
-    if (httpCode >
-        0)
-    { // httpCode will be negative on error.
-        M5.Lcd.printf("[HTTP] GET... code: %d\n", httpCode);
-
-        if (httpCode ==
-            HTTP_CODE_OK)
-        { // file found at server.
-            String payload = http.getString();
-            M5.Lcd.println(payload); // Print files read on the server
-        }
-    }
-    else
-    {
-        M5.Lcd.printf("[HTTP] GET... failed, error: %s\n",
-                      http.errorToString(httpCode).c_str());
-    }
-    http.end();
-    delay(5000);
-    M5.Lcd.clear(); // clear the screen
-}
-
-void ButtonRead(void *pvParameters)
-{
-    while (1)
-    {
-        M5.update();
-        if (M5.BtnA.pressedFor(500))
-        {
-            M5.Axp.SetVibration(true); // Open the vibration.   开启震动马达
-            vTaskDelay(100);
-            M5.Axp.SetVibration(false);
-            data_offset = 0;
-            Serial.println("Before Speak");
-            Serial.println("After Speak");
-            size_t byte_read;
-            while (1)
-            {
-                M5.Lcd.setCursor(0, 200);
-                M5.Lcd.println("Recording......");
-                Serial.println("Recording......");
-                // M5.Lcd.clearDisplay
-                i2s_read(Speak_I2S_NUMBER,
-                         (char *)(microphonedata0 + data_offset), DATA_SIZE,
-                         &byte_read, (100 / portTICK_RATE_MS));
-                data_offset += 1024;
-                if (data_offset == 1024 * 4)
-                {
-                    Serial.println("Sending buffer");
-                    client.sendBinary(microphonedata0);
-                    //client.sendBinary(microphonedata0, 1024 * 4);
-                    data_offset=0;
-                }
-                if (M5.BtnA.wasReleasefor(1000))
-                {
-                    M5.Lcd.setCursor(0, 120);
-                    // Serial.print("buffer exceeded? - ");
-                    client.send("End");
-                    Serial.println("ButtonA released");
-                    M5.Lcd.printf("Out of while loop");
-                    break;
-                }
-                M5.update();
-            }
-            //size_t bytes_written;
-            //M5.Spk.InitI2SSpeakOrMic(MODE_SPK);
-            //i2s_write(Speak_I2S_NUMBER, microphonedata0, data_offset,
-            //          &bytes_written, portMAX_DELAY);
-            vTaskDelay(1000);
-            // M5.Axp.PowerOff();
-            DisplayInit();
-        }
-    }
-}
-
-void DisplayInit()
-{                             // Initialize the display. 显示屏初始化
-    M5.Lcd.fillScreen(WHITE); // Set the screen background color to white.
-                              // 设置屏幕背景色为白色
-    M5.Lcd.setTextColor(
-        BLACK);            // Set the text color to black.  设置文字颜色为黑色
-    M5.Lcd.setTextSize(2); // Set font size to 2.  设置字体大小为2
-    M5.Lcd.setTextColor(RED);
-    M5.Lcd.setCursor(0,
-                     10);       // Set the cursor at (10,10).  将光标设在（10，10）处
-    M5.Lcd.printf("Recorder!"); // The screen prints the formatted string and
-                                // wraps it.  屏幕打印格式化字符串并换行
-    M5.Lcd.setTextColor(BLACK);
-    M5.Lcd.setCursor(0, 26);
-    M5.Lcd.printf("Press Left Button to recording!");
-    delay(100); // delay 100ms.  延迟100ms
 }
