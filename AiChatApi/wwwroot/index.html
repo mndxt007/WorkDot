@@ -3,12 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Recorder</title>
+    <title>Voice Chat Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        #recordButton {
+            display: block;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+            #recordButton:hover {
+                background-color: #2980b9;
+            }
+
+            #recordButton:active {
+                transform: scale(0.98);
+            }
+
+            #recordButton.recording {
+                background-color: #e74c3c;
+                animation: pulse 1s infinite;
+            }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        #chatContainer {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        #recognizedText {
+            white-space: pre-wrap;
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Audio Recorder</h1>
-    <button id="recordButton">Click to Record</button>
-    <p id="recognizedText"></p>
+    <h1>Voice Chat Test Page</h1>
+    <button id="recordButton">Hold to Speak</button>
+    <div id="chatContainer">
+        <pre id="recognizedText"></pre>
+    </div>
 
     <script type="module">
         import { MediaRecorder, register } from 'https://jspm.dev/extendable-media-recorder';
@@ -16,45 +90,33 @@
 
         const recordButton = document.getElementById('recordButton');
         const recognizedTextElement = document.getElementById('recognizedText');
-        const socket = new WebSocket('ws://localhost:5189/ws'); // Update with your WebSocket endpoint
+        const socket = new WebSocket('ws://localhost:5189/ws');
         let isRecording = false;
         let chunks = [];
         let mediaRecorder;
         let stream;
+        let allRecognizedText = '';
 
-        // Handle WebSocket connection
-        socket.onopen = () => {
-            console.log('WebSocket connection established.');
-        };
-
-        socket.onerror = (error) => {
-            console.log('WebSocket error:', error);
-        };
-
+        socket.onopen = () => console.log('WebSocket connection established.');
+        socket.onerror = (error) => console.log('WebSocket error:', error);
         socket.onmessage = (event) => {
             const recognizedText = event.data;
-            recognizedTextElement.textContent = recognizedText;
+            allRecognizedText += recognizedText + ' ';
+            recognizedTextElement.textContent = allRecognizedText.trim();
+            recognizedTextElement.scrollTop = recognizedTextElement.scrollHeight;
         };
 
-        // Request audio stream once
         async function getMediaStream() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 await register(await connect());
                 mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/wav' });
-                mediaRecorder.addEventListener('dataavailable', ({ data }) => {
-                    chunks.push(data);
-                });
+                mediaRecorder.addEventListener('dataavailable', ({ data }) => chunks.push(data));
                 mediaRecorder.addEventListener('stop', () => {
                     const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
                     chunks = [];
-
-                    // Send the audio data as binary
                     const reader = new FileReader();
-                    reader.onload = () => {
-                        const arrayBuffer = reader.result;
-                        socket.send(arrayBuffer);
-                    };
+                    reader.onload = () => socket.send(reader.result);
                     reader.readAsArrayBuffer(blob);
                 });
             } catch (error) {
@@ -65,12 +127,10 @@
         getMediaStream();
 
         function startRecording() {
-            if (!mediaRecorder) {
-                console.error('MediaRecorder is not available.');
-                return;
+            if (mediaRecorder) {
+                mediaRecorder.start();
+                console.log('Recording started.');
             }
-            mediaRecorder.start();
-            console.log('Recording started.');
         }
 
         function stopRecording() {
@@ -80,41 +140,31 @@
             }
         }
 
-        recordButton.addEventListener('click', () => {
+        function handleRecordingStart(event) {
+            event.preventDefault();
             if (!isRecording) {
-                // Start recording
                 chunks = [];
                 startRecording();
                 isRecording = true;
-                recordButton.textContent = 'Recording...';
-            } else {
-                // Stop recording
-                stopRecording();
-                isRecording = false;
-                recordButton.textContent = 'Hold to Record';
+                recordButton.textContent = 'Release to Stop';
+                recordButton.classList.add('recording');
             }
-        });
+        }
 
-        recordButton.addEventListener('touchstart', (event) => {
-            event.preventDefault(); // Prevents 'click' event after 'touchstart'
-            if (!isRecording) {
-                // Start recording
-                chunks = [];
-                startRecording();
-                isRecording = true;
-                recordButton.textContent = 'Recording...';
-            }
-        });
-
-        recordButton.addEventListener('touchend', (event) => {
-            event.preventDefault(); // Prevents 'click' event after 'touchend'
+        function handleRecordingStop(event) {
+            event.preventDefault();
             if (isRecording) {
-                // Stop recording
                 stopRecording();
                 isRecording = false;
-                recordButton.textContent = 'Hold to Record';
+                recordButton.textContent = 'Hold to Speak';
+                recordButton.classList.remove('recording');
             }
-        });
+        }
+
+        recordButton.addEventListener('mousedown', handleRecordingStart);
+        recordButton.addEventListener('mouseup', handleRecordingStop);
+        recordButton.addEventListener('touchstart', handleRecordingStart);
+        recordButton.addEventListener('touchend', handleRecordingStop);
     </script>
 </body>
 </html>

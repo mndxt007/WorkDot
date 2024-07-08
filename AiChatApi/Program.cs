@@ -1,7 +1,17 @@
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+builder.Services.AddSingleton<IChatCompletionService>(sp =>
+{
+    return new AzureOpenAIChatCompletionService(builder.Configuration["AzureOpenAi:DeploymentName"]!,
+    builder.Configuration["AzureOpenAi:Endpoint"]!,
+    builder.Configuration["AzureOpenAi:ApiKey"]!);
+});
 
 var app = builder.Build();
 

@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 using NAudio.Wave;
+using System;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -13,11 +16,16 @@ namespace AiChatApi.Controllers
         private readonly IConfiguration _configuration;
         private IHostEnvironment _environment;
         private readonly ILogger _logger;
-        public SpeechController(IConfiguration configuration, ILogger<SpeechController> logger, IHostEnvironment environment)
+        private readonly IChatCompletionService _chatCompletionService;
+        private ChatHistory chatHistory = [];
+
+        public SpeechController(IConfiguration configuration, ILogger<SpeechController> logger, IHostEnvironment environment, IChatCompletionService chatCompletionService)
         {
             _configuration = configuration;
             _logger = logger;
             _environment = environment;
+            _chatCompletionService = chatCompletionService;
+            chatHistory.AddSystemMessage(_configuration["SystemPrompt"]!);
         }
 
         [Route("/ws")]
@@ -40,7 +48,6 @@ namespace AiChatApi.Controllers
             {
                 while (!webSocket.CloseStatus.HasValue)
                 {
-
                     var buffer = new byte[1024 * 4];
 
                     using var memoryStream = new MemoryStream();
@@ -66,25 +73,25 @@ namespace AiChatApi.Controllers
                         var s = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
                         WaveFileWriter.CreateWaveFile(filePath, s);
                     }
-
                     else
                     {
                         memoryStream.Seek(0, SeekOrigin.Begin);
 
                         //Save the audio file for debugging
-
-
-                        using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-                        {
-                            memoryStream.CopyTo(fileStream);
-                        }
+                        using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+                        memoryStream.CopyTo(fileStream);
                     }
-                        
-                    
 
                     var speechText = await ConvertSpeechToText(filePath);
-                    var textBuffer = Encoding.UTF8.GetBytes(speechText);
+                    var textBuffer = Encoding.UTF8.GetBytes($"\nYou : {speechText} \nAI :");
                     await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                    var completion = GetChatCompletion(speechText);
+                    await foreach (var response in completion)
+                    {
+                        await webSocket.SendAsync(response.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
+                        await Task.Delay(100);
+                    }
                 }
 
                 await webSocket.CloseAsync(webSocket.CloseStatus ?? WebSocketCloseStatus.NormalClosure, webSocket.CloseStatusDescription, CancellationToken.None);
@@ -93,6 +100,12 @@ namespace AiChatApi.Controllers
             {
                 _logger.LogError(ex.ToString());
             }
+        }
+
+        private IAsyncEnumerable<StreamingChatMessageContent> GetChatCompletion(string speechText)
+        {
+            chatHistory.AddUserMessage(speechText);
+            return _chatCompletionService.GetStreamingChatMessageContentsAsync(chatHistory);
         }
 
         private async Task<string> ConvertSpeechToText(string wavFileInput)
