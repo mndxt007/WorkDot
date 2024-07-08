@@ -36,12 +36,12 @@ void setup(void)
     auto cfg = M5.config();
     M5.begin(cfg);
     setupLogging();
-    if(setupWifiManager(wm))  // used the samples from https://dronebotworkshop.com/wifimanager/
+    if (setupWifiManager(wm)) // used the samples from https://dronebotworkshop.com/wifimanager/
     {
         M5.Log(ESP_LOG_DEBUG, "Setting up Websockets");
         webSocket.onEvent(webSocketEvent);
-        webSocket.begin("192.168.1.7", 5189, "/ws");
-        //To-do - Remove hard coding
+        webSocket.begin("192.168.1.10", 5189, "/ws");
+        // To-do - Remove hard coding
         webSocket.setReconnectInterval(5000);
     }
     setupAudio(i2sSampler); // fork of https://github.com/atomic14/esp32_audio/tree/master
@@ -55,7 +55,7 @@ void setup(void)
         M5.Log(ESP_LOG_ERROR, "Failed to allocate memory for samples");
     }
 
-    //Tasks
+    // Tasks
     //=====================
     xTaskCreate(webSocketTask, "WebSocketTask", 4096, NULL, 1, &wsTaskHandle);
 }
@@ -67,18 +67,18 @@ void loop(void)
     if (M5.BtnA.wasHold())
     {
         quickVibrate();
-        M5.Log(ESP_LOG_INFO, "Recording Started....");
+        M5.Log(ESP_LOG_INFO, "\nRecording Started....");
         int samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
-        sendDataW(true, false,(uint8_t *)samples, samples_read * sizeof(uint16_t));
+        sendDataW(true, false, (uint8_t *)samples, samples_read * sizeof(uint16_t));
         while (!M5.BtnB.wasHold())
         {
             samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
-            sendDataW(false,false,(uint8_t *)samples, samples_read * sizeof(uint16_t));
+            sendDataW(false, false, (uint8_t *)samples, samples_read * sizeof(uint16_t));
             M5.Log(ESP_LOG_INFO, "....");
             M5.update();
-            //webSocket.loop();
+           // webSocket.loop();
         }
-        sendDataW(false,true,(uint8_t *)samples, 0);
+        sendDataW(false, true, (uint8_t *)samples, 0);
         M5.Log(ESP_LOG_INFO, "Recording Ended.");
         quickVibrate();
     }
@@ -105,7 +105,7 @@ if (SD.begin(GPIO_NUM_4, SPI, 25000000))
 
 void sendDataW(bool first, bool last, uint8_t *bytes, size_t count)
 {
-    webSocket.sendBIN(first, last,bytes, count, false);
+    webSocket.sendBIN(first, last, bytes, count, false);
 }
 
 void sendDataHttp(uint8_t *bytes, size_t count)
@@ -133,10 +133,14 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         M5.Log(ESP_LOG_ERROR, "[WSc] Disconnected!\n");
         break;
     case WStype_CONNECTED:
-       M5.Log(ESP_LOG_INFO, "Server Connected");
+        M5.Log(ESP_LOG_INFO, "Server Connected");
         break;
     case WStype_TEXT:
-        M5.Log(ESP_LOG_INFO,"Response: %s\n", payload);
+        // M5.Log(ESP_LOG_INFO,"Response: %s\n", payload);
+        if (payload != nullptr)
+        {
+            M5.Display.printf("%s", payload);
+        }
         break;
     case WStype_BIN:
         // Handle binary data if needed
@@ -150,10 +154,12 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
     }
 }
 
-void webSocketTask(void *parameter) {
-    while (true) {
+void webSocketTask(void *parameter)
+{
+    while (true)
+    {
         webSocket.loop();
-        vTaskDelay(10 / portTICK_PERIOD_MS);  // Adjust delay as needed
+        // vTaskDelay(10 / portTICK_PERIOD_MS);  // Adjust delay as needed
     }
 }
 
