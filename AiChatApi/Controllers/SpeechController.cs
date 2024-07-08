@@ -82,15 +82,23 @@ namespace AiChatApi.Controllers
                         memoryStream.CopyTo(fileStream);
                     }
 
-                    var speechText = await ConvertSpeechToText(filePath);
-                    var textBuffer = Encoding.UTF8.GetBytes($"\nYou : {speechText} \nAI :");
-                    await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
-
-                    var completion = GetChatCompletion(speechText);
-                    await foreach (var response in completion)
+                    var speechRecognitionResult = await ConvertSpeechToText(filePath);
+                    if (speechRecognitionResult != null && speechRecognitionResult.Reason == ResultReason.RecognizedSpeech)
                     {
-                        await webSocket.SendAsync(response.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
-                        await Task.Delay(100);
+                        var textBuffer = Encoding.UTF8.GetBytes($"\nYou : {speechRecognitionResult.Text} \nAI :");
+                        await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                        var completion = GetChatCompletion(speechRecognitionResult.Text);
+                        await foreach (var response in completion)
+                        {
+                            await webSocket.SendAsync(response.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
+                            await Task.Delay(100);
+                        }
+                    }
+                    else
+                    {
+                        var textBuffer = Encoding.UTF8.GetBytes("Sorry, I couldn't recognize your speech. Please try again!");
+                        await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
                     }
                 }
 
@@ -108,7 +116,7 @@ namespace AiChatApi.Controllers
             return _chatCompletionService.GetStreamingChatMessageContentsAsync(chatHistory);
         }
 
-        private async Task<string> ConvertSpeechToText(string wavFileInput)
+        private async Task<SpeechRecognitionResult> ConvertSpeechToText(string wavFileInput)
         {
             string subscriptionKey = _configuration["AzureSpeech:SubscriptionKey"]!;
             string region = _configuration["AzureSpeech:Region"]!;
@@ -125,7 +133,7 @@ namespace AiChatApi.Controllers
 
                 if (result.Reason == ResultReason.RecognizedSpeech)
                 {
-                    return result.Text;
+                    return result;
                 }
                 else
                 {
@@ -149,13 +157,13 @@ namespace AiChatApi.Controllers
                             }
                             break;
                     }
-                    return $"Speech recognition failed: {result.Reason}";
+                    return result;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex.ToString());
-                return "Speech recognition failed due to an exception.";
+                return default!;
             }
         }
     }
