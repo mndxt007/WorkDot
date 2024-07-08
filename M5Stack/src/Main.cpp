@@ -159,7 +159,7 @@ void webSocketTask(void *parameter)
     while (true)
     {
         webSocket.loop();
-        // vTaskDelay(10 / portTICK_PERIOD_MS);  // Adjust delay as needed
+        vTaskDelay(10 / portTICK_PERIOD_MS);  // Adjust delay as needed
     }
 }
 
