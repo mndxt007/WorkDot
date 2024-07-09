@@ -78,6 +78,7 @@ bool setupWifiManager(WiFiManager &wm)
 {
     // sample - https://dronebotworkshop.com/wifimanager/
     // To do - On demand Autoconfig - https://github.com/tzapu/WiFiManager/tree/master/examples/OnDemand
+    wm.setWebServerCallback(onWebServerStart);
     bool res = wm.autoConnect(SSID, PASS); // password protected AP
     if (!res)
     {
@@ -96,4 +97,8 @@ void setupAudio(I2SSampler *&i2sSampler)
     i2s_driver_uninstall(I2S_NUM_0);
     i2sSampler = new I2SMEMSSampler(I2S_NUM_0, i2sPins, i2s_config, false);
     i2sSampler->start();
+}
+
+void onWebServerStart() {
+    M5.Log(ESP_LOG_INFO, "please connect to %s and setup device",SSID);
 }

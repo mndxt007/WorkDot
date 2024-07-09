@@ -4,6 +4,7 @@
 #include "Audio\I2SMEMSSampler.h"
 #include <HTTPClient.h>
 #include <WebSocketsClient.h>
+#include <Secrets.h>
 
 // defines
 //================
@@ -17,7 +18,6 @@ HTTPClient httpClient;
 WebSocketsClient webSocket;
 const int SAMPLE_SIZE = 16384;
 int16_t *samples = nullptr;
-uint8_t wavHeader[44];
 static TaskHandle_t wsTaskHandle = NULL;
 
 // Methods Declaration
@@ -82,6 +82,10 @@ void loop(void)
         M5.Log(ESP_LOG_INFO, "Recording Ended.");
         quickVibrate();
     }
+    if (M5.BtnPWR.isPressed() || M5.BtnC.wasHold())
+    {
+        wm.startConfigPortal(SSID, PASS);
+    }
     M5.delay(200);
 }
 
@@ -130,7 +134,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
     switch (type)
     {
     case WStype_DISCONNECTED:
-        M5.Log(ESP_LOG_ERROR, "[WSc] Disconnected!\n");
+        M5.Log(ESP_LOG_ERROR, "Server not connected, retrying..\n");
         break;
     case WStype_CONNECTED:
         M5.Log(ESP_LOG_INFO, "Server Connected");

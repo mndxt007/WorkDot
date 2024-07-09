@@ -3,3 +3,4 @@
 void setupLogging();
 bool setupWifiManager(WiFiManager &wm);
 void setupAudio(I2SSampler *&i2sSampler);
+void onWebServerStart();
