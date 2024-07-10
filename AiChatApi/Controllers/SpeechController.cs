@@ -70,7 +70,7 @@ namespace AiChatApi.Controllers
                     // If not, add a WAV header
                     if (header != "RIFF")
                     {
-                        var s = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
+                        var s = new RawSourceWaveStream(memoryStream, new WaveFormat(8000, 1));
                         WaveFileWriter.CreateWaveFile(filePath, s);
                     }
                     else
