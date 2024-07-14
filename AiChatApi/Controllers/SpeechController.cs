@@ -4,8 +4,6 @@ using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using NAudio.Wave;
-using System;
-using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -14,18 +12,23 @@ namespace AiChatApi.Controllers
     public class SpeechController : Controller
     {
         private readonly IConfiguration _configuration;
-        private IHostEnvironment _environment;
-        private readonly ILogger _logger;
+        private readonly IHostEnvironment _environment;
+        private readonly ILogger<SpeechController> _logger;
         private readonly IChatCompletionService _chatCompletionService;
-        private ChatHistory chatHistory = [];
+        private readonly ChatHistory _chatHistory;
 
-        public SpeechController(IConfiguration configuration, ILogger<SpeechController> logger, IHostEnvironment environment, IChatCompletionService chatCompletionService)
+        public SpeechController(
+            IConfiguration configuration,
+            ILogger<SpeechController> logger,
+            IHostEnvironment environment,
+            IChatCompletionService chatCompletionService)
         {
             _configuration = configuration;
             _logger = logger;
             _environment = environment;
             _chatCompletionService = chatCompletionService;
-            chatHistory.AddSystemMessage(_configuration["SystemPrompt"]!);
+            _chatHistory = [];
+            _chatHistory.AddSystemMessage(_configuration["SystemPrompt"]!);
         }
 
         [Route("/ws")]
@@ -42,6 +45,8 @@ namespace AiChatApi.Controllers
             }
         }
 
+        #region WebSocket Methods
+        
         private async Task ReceiveAudio(WebSocket webSocket)
         {
             try
@@ -49,60 +54,36 @@ namespace AiChatApi.Controllers
                 while (!webSocket.CloseStatus.HasValue)
                 {
                     var buffer = new byte[1024 * 4];
-
                     using var memoryStream = new MemoryStream();
                     WebSocketReceiveResult result;
-                    int count = 0;
                     do
                     {
                         result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                         memoryStream.Write(buffer, 0, result.Count);
-                        count++;
                     } while (!result.EndOfMessage);
 
-                    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\wavfiles\\", $"audio_{DateTime.Now.Ticks}.wav");
-
+                    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot/wavfiles/", $"audio_{DateTime.Now.Ticks}.wav");
                     memoryStream.Seek(0, SeekOrigin.Begin);
-                    var headerBytes = new byte[4];
-                    await memoryStream.ReadAsync(headerBytes, 0, 4);
-                    var header = Encoding.ASCII.GetString(headerBytes);
 
-                    // If not, add a WAV header
-                    if (header != "RIFF")
+                    if (!IsWavFile(memoryStream))
                     {
-                        var s = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
-                        WaveFileWriter.CreateWaveFile(filePath, s);
-                        //save raw file as well.
-                        //var rawFilePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\wavfiles\\", $"audio_{DateTime.Now.Ticks}.raw");
-                        //memoryStream.Seek(0, SeekOrigin.Begin);
-                        //await memoryStream.CopyToAsync(new FileStream(rawFilePath, FileMode.Create));
+                        var waveStream = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
+                        WaveFileWriter.CreateWaveFile(filePath, waveStream);
                     }
                     else
                     {
-                        memoryStream.Seek(0, SeekOrigin.Begin);
-
-                        //Save the audio file for debugging
-                        using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-                        memoryStream.CopyTo(fileStream);
+                        SaveFile(memoryStream, filePath);
                     }
 
                     var speechRecognitionResult = await ConvertSpeechToText(filePath);
+
                     if (speechRecognitionResult != null && speechRecognitionResult.Reason == ResultReason.RecognizedSpeech)
                     {
-                        var textBuffer = Encoding.UTF8.GetBytes($"\nYou : {speechRecognitionResult.Text} \nAI :");
-                        await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
-
-                        var completion = GetChatCompletion(speechRecognitionResult.Text);
-                        await foreach (var response in completion)
-                        {
-                            await webSocket.SendAsync(response.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
-                            await Task.Delay(100);
-                        }
+                        await SendRecognizedResponse(webSocket, speechRecognitionResult.Text);
                     }
                     else
                     {
-                        var textBuffer = Encoding.UTF8.GetBytes("Sorry, I couldn't recognize your speech. Please try again!");
-                        await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+                        await SendUnrecognizedResponse(webSocket);
                     }
                 }
 
@@ -114,11 +95,42 @@ namespace AiChatApi.Controllers
             }
         }
 
+        private async Task SendRecognizedResponse(WebSocket webSocket, string recognizedText)
+        {
+            var userTextBuffer = Encoding.UTF8.GetBytes($"\nYou: {recognizedText}\nAI:");
+            await webSocket.SendAsync(new ArraySegment<byte>(userTextBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+
+            var completion = GetChatCompletion(recognizedText);
+            var response = new StringBuilder();
+            await foreach (var item in completion)
+            {
+                await webSocket.SendAsync(item.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
+                response.Append(item.Content);
+                await Task.Delay(100);
+            }
+
+            _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.ToString()));
+        }
+
+        private async Task SendUnrecognizedResponse(WebSocket webSocket)
+        {
+            var textBuffer = Encoding.UTF8.GetBytes("Sorry, I couldn't recognize your speech. Please try again!");
+            await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+        
+        #endregion
+        
+        #region Chat Completion Methods
+
         private IAsyncEnumerable<StreamingChatMessageContent> GetChatCompletion(string speechText)
         {
-            chatHistory.AddUserMessage(speechText);
-            return _chatCompletionService.GetStreamingChatMessageContentsAsync(chatHistory);
+            _chatHistory.AddUserMessage(speechText);
+            return _chatCompletionService.GetStreamingChatMessageContentsAsync(_chatHistory);
         }
+        
+        #endregion
+
+        #region Speech Recognition Methods
 
         private async Task<SpeechRecognitionResult> ConvertSpeechToText(string wavFileInput)
         {
@@ -132,37 +144,9 @@ namespace AiChatApi.Controllers
 
             try
             {
-                // Perform speech recognition
                 var result = await speechRecognizer.RecognizeOnceAsync();
-
-                if (result.Reason == ResultReason.RecognizedSpeech)
-                {
-                    return result;
-                }
-                else
-                {
-                    switch (result.Reason)
-                    {
-                        case ResultReason.RecognizedSpeech:
-                            _logger.LogError($"RECOGNIZED: Text={result.Text}");
-                            break;
-                        case ResultReason.NoMatch:
-                            _logger.LogError($"NOMATCH: Speech could not be recognized.");
-                            break;
-                        case ResultReason.Canceled:
-                            var cancellation = CancellationDetails.FromResult(result);
-                            _logger.LogError($"CANCELED: Reason={cancellation.Reason}");
-
-                            if (cancellation.Reason == CancellationReason.Error)
-                            {
-                                _logger.LogError($"CANCELED: ErrorCode={cancellation.ErrorCode}");
-                                _logger.LogError($"CANCELED: ErrorDetails={cancellation.ErrorDetails}");
-                                _logger.LogError($"CANCELED: Did you set the speech resource key and region values?");
-                            }
-                            break;
-                    }
-                    return result;
-                }
+                LogRecognitionResult(result);
+                return result;
             }
             catch (Exception ex)
             {
@@ -170,5 +154,52 @@ namespace AiChatApi.Controllers
                 return default!;
             }
         }
+        private void LogRecognitionResult(SpeechRecognitionResult result)
+        {
+            if (result.Reason == ResultReason.RecognizedSpeech)
+            {
+                _logger.LogInformation($"RECOGNIZED: Text={result.Text}");
+            }
+            else
+            {
+                switch (result.Reason)
+                {
+                    case ResultReason.NoMatch:
+                        _logger.LogWarning("NOMATCH: Speech could not be recognized.");
+                        break;
+                    case ResultReason.Canceled:
+                        var cancellation = CancellationDetails.FromResult(result);
+                        _logger.LogError($"CANCELED: Reason={cancellation.Reason}");
+
+                        if (cancellation.Reason == CancellationReason.Error)
+                        {
+                            _logger.LogError($"CANCELED: ErrorCode={cancellation.ErrorCode}");
+                            _logger.LogError($"CANCELED: ErrorDetails={cancellation.ErrorDetails}");
+                        }
+                        break;
+                }
+            }
+        }
+       
+        #endregion
+       
+        #region Utility Methods
+
+        private bool IsWavFile(MemoryStream memoryStream)
+        {
+            var headerBytes = new byte[4];
+            memoryStream.Read(headerBytes, 0, 4);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var header = Encoding.ASCII.GetString(headerBytes);
+            return header == "RIFF";
+        }
+
+        private void SaveFile(MemoryStream memoryStream, string filePath)
+        {
+            using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+            memoryStream.CopyTo(fileStream);
+        }
+
+        #endregion
     }
 }
