@@ -3,12 +3,19 @@
 #include "Startup\Startup.h"
 #include "Audio\I2SMEMSSampler.h"
 #include <HTTPClient.h>
-#include <WebSocketsClient.h>
+#include "WebSockets\WebSocketsClient.h"
 #include <Secrets.h>
+#include "perfmon.h"
 
 // defines
 //================
 #define SERVER_URL "https://192.168.1.7:7083/i2s_samples"
+
+// statics
+//================
+static constexpr const size_t record_size = 10000;
+static constexpr const size_t record_samplerate = 16000;
+static int16_t *rec_data;
 
 // globals
 //==================
@@ -17,7 +24,7 @@ I2SSampler *i2sSampler = nullptr;
 HTTPClient httpClient;
 WebSocketsClient webSocket;
 const int SAMPLE_SIZE = 16384;
-int16_t *samples = nullptr;
+// uint8_t *samples = nullptr;
 static TaskHandle_t wsTaskHandle = NULL;
 
 // Methods Declaration
@@ -40,20 +47,23 @@ void setup(void)
     {
         M5.Log(ESP_LOG_DEBUG, "Setting up Websockets");
         webSocket.onEvent(webSocketEvent);
-        webSocket.begin("192.168.1.10", 5189, "/ws");
+        webSocket.begin("192.168.137.1", 5189, "/ws");
         // To-do - Remove hard coding
         webSocket.setReconnectInterval(5000);
     }
-    setupAudio(i2sSampler); // fork of https://github.com/atomic14/esp32_audio/tree/master
+    // setupAudio(i2sSampler); // fork of https://github.com/atomic14/esp32_audio/tree/master
+
+    // using M5.Mic
+    //auto miccfg = M5.Mic.config();
+    M5.Mic.begin();
+    // miccfg.noise_filter_level = (miccfg.noise_filter_level + 8) & 255;
+    // M5.Mic.config(miccfg);
 
     // Audio Setup
     //=======================
     // Create the samples buffer
-    samples = (int16_t *)malloc(sizeof(uint16_t) * SAMPLE_SIZE);
-    if (!samples)
-    {
-        M5.Log(ESP_LOG_ERROR, "Failed to allocate memory for samples");
-    }
+    rec_data = (typeof(rec_data))heap_caps_malloc(record_size * sizeof(int16_t), MALLOC_CAP_8BIT);
+    memset(rec_data, 0, record_size * sizeof(int16_t));
 
     // Tasks
     //=====================
@@ -63,27 +73,40 @@ void setup(void)
 void loop(void)
 {
     M5.update();
-    //webSocket.loop();
+    // webSocket.loop();
     if (M5.BtnA.wasHold())
     {
-        quickVibrate();
-        M5.Log(ESP_LOG_INFO, "\nRecording Started....");
-        int samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
-        sendDataW(true, false, (uint8_t *)samples, samples_read * sizeof(uint16_t));
+        if (M5.Mic.record(rec_data, record_size, record_samplerate, false))
+        {
+            sendDataW(true, false, (uint8_t *)rec_data, record_size * sizeof(uint16_t));
+            quickVibrate();
+            M5.Log(ESP_LOG_INFO, "\nRecording Started....");
+        }
+        else
+        {
+            M5.Log(ESP_LOG_ERROR, "Record failed");
+        }
         while (!M5.BtnB.wasHold())
         {
-            samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
-            sendDataW(false, false, (uint8_t *)samples, samples_read * sizeof(uint16_t));
-            M5.Log(ESP_LOG_INFO, "....");
-            M5.update();
-           // webSocket.loop();
+            if (M5.Mic.record(rec_data, record_size, record_samplerate, false))
+            {
+                sendDataW(false, false, (uint8_t *)rec_data, record_size * sizeof(uint16_t));
+                M5.Log(ESP_LOG_INFO, "....");
+                M5.update();
+            }
+            else
+            {
+                M5.Log(ESP_LOG_ERROR, "Record failed");
+            }
+            // webSocket.loop();
         }
-        sendDataW(false, true, (uint8_t *)samples, 0);
-        M5.Log(ESP_LOG_INFO, "Recording Ended.");
         quickVibrate();
+        sendDataW(false, true, (uint8_t *)rec_data, 0);
+        M5.Log(ESP_LOG_INFO, "Recording Ended.");
     }
     if (M5.BtnPWR.isPressed() || M5.BtnC.wasHold())
     {
+        quickVibrate();
         wm.startConfigPortal(SSID, PASS);
     }
     M5.delay(200);
@@ -163,7 +186,7 @@ void webSocketTask(void *parameter)
     while (true)
     {
         webSocket.loop();
-        vTaskDelay(10 / portTICK_PERIOD_MS);  // Adjust delay as needed
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust delay as needed
     }
 }
 

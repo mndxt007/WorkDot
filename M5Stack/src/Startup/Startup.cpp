@@ -100,5 +100,5 @@ void setupAudio(I2SSampler *&i2sSampler)
 }
 
 void onWebServerStart() {
-    M5.Log(ESP_LOG_INFO, "please connect to %s and setup device",SSID);
+    M5.Log(ESP_LOG_INFO, "\nPlease connect to %s and setup device",SSID);
 }
