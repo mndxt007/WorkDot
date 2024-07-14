@@ -2,26 +2,16 @@
 #include <WiFiManager.h>
 #include <Secrets.h>
 #include "Startup.h"
-#include "Audio\I2SMEMSSampler.h"
-#include "Audio\I2SSampler.h"
+#include "WebSockets\WebSocketsClient.h"
+#include <FS.h>
+#include <SPIFFS.h>
+#include <ArduinoJson.h>
 
-//audio config
-i2s_config_t i2s_config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM),
-    .sample_rate = 32000,
-    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-    .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
-    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-    .dma_buf_count = 4,
-    .dma_buf_len = 1024,
-};
+#define JSON_CONFIG_FILE "/test_config.json"
 
-// i2s pins
-i2s_pin_config_t i2sPins = {.bck_io_num = GPIO_NUM_12,
-                             .ws_io_num = GPIO_NUM_0,
-                             .data_out_num = I2S_PIN_NO_CHANGE,
-                             .data_in_num = GPIO_NUM_34};
+
+auto serverIP = WiFiManagerParameter("server_ip", "Server IP", "127.0.0.1", 50);
+JsonDocument json;
 
 void setupLogging()
 {
@@ -32,6 +22,7 @@ void setupLogging()
     M5.Display.setTextWrap(true, true);
     /// use scrolling.
     M5.Display.setTextScroll(true);
+    //use touch to scroll.
 
     /// Example of M5Unified log output class usage.
     /// Unlike ESP_LOGx, the M5.Log series can output to serial, display, and user callback function in a single line of code.
@@ -64,7 +55,7 @@ void setupLogging()
     //   M5.Log(ESP_LOG_VERBOSE , "M5.Log verbose log");  /// VERBOSE level output
 
     // `M5_LOGx` macro can be used to output a log containing the source file name, line number, and function name.
-    //M5_LOGE("M5_LOGE error log"); /// ERROR level output with source info
+    // M5_LOGE("M5_LOGE error log"); /// ERROR level output with source info
     //   M5_LOGW("M5_LOGW warn log");      /// WARN level output with source info
     //   M5_LOGI("M5_LOGI info log");      /// INFO level output with source info
     //   M5_LOGD("M5_LOGD debug log");     /// DEBUG level output with source info
@@ -77,9 +68,15 @@ void setupLogging()
 bool setupWifiManager(WiFiManager &wm)
 {
     // sample - https://dronebotworkshop.com/wifimanager/
-    // To do - On demand Autoconfig - https://github.com/tzapu/WiFiManager/tree/master/examples/OnDemand
+    wm.setSaveParamsCallback(saveConfigFile);
+    wm.addParameter(&serverIP);
     wm.setWebServerCallback(onWebServerStart);
     bool res = wm.autoConnect(SSID, PASS); // password protected AP
+    if (!loadConfigFile())
+    {
+        M5.Log(ESP_LOG_DEBUG, "SPIFF File not found");
+        wm.startConfigPortal(SSID, PASS);
+    }
     if (!res)
     {
         M5.Log(ESP_LOG_INFO, "Failed to connect");
@@ -92,13 +89,94 @@ bool setupWifiManager(WiFiManager &wm)
     return res;
 }
 
-void setupAudio(I2SSampler *&i2sSampler)
+
+void onWebServerStart()
 {
-    i2s_driver_uninstall(I2S_NUM_0);
-    i2sSampler = new I2SMEMSSampler(I2S_NUM_0, i2sPins, i2s_config, false);
-    i2sSampler->start();
+    M5.Log(ESP_LOG_INFO, "\nPlease connect to %s and setup device", SSID);
 }
 
-void onWebServerStart() {
-    M5.Log(ESP_LOG_INFO, "please connect to %s and setup device",SSID);
+
+bool loadConfigFile()
+// Load existing configuration file
+{
+    // Uncomment if we need to format filesystem
+    // SPIFFS.format();
+
+    // Read configuration from FS json
+    M5.Log(ESP_LOG_DEBUG, "Mounting File System...");
+
+    // May need to make it begin(true) first time you are using SPIFFS
+    if (SPIFFS.begin(false) || SPIFFS.begin(true))
+    {
+        M5.Log(ESP_LOG_DEBUG, "mounted file system");
+        if (SPIFFS.exists(JSON_CONFIG_FILE))
+        {
+            // The file exists, reading and loading
+            M5.Log(ESP_LOG_DEBUG, "reading config file");
+            File configFile = SPIFFS.open(JSON_CONFIG_FILE, "r");
+            if (configFile)
+            {
+                M5.Log(ESP_LOG_DEBUG, "Opened configuration file");
+                // StaticJsonDocument<512> json;
+                DeserializationError error = deserializeJson(json, configFile);
+                serializeJsonPretty(json, Serial);
+                if (!error)
+                {
+                    M5.Log(ESP_LOG_DEBUG, "Parsing JSON");
+
+                    serverIP.setValue(json["serverIp"], strlen(json["serverIp"]));
+                    // testNumber = json["testNumber"].as<int>();
+
+                    return true;
+                }
+                else
+                {
+                    // Error loading JSON data
+                    M5.Log(ESP_LOG_DEBUG, "Failed to load json config");
+                }
+            }
+        }
+    }
+    else
+    {
+        // Error mounting file system
+        M5.Log(ESP_LOG_DEBUG, "Failed to mount FS");
+    }
+
+    return false;
+}
+
+void saveConfigFile()
+// Save Config in JSON format
+{
+    M5.Log(ESP_LOG_DEBUG, "Saving configuration...");
+
+    // Create a JSON document
+    // StaticJsonDocument<512> json;
+    //   json["testString"] = testString;
+    //   json["testNumber"] = testNumber;
+    json["serverIp"] = serverIP.getValue();
+
+    // Open config file
+    File configFile = SPIFFS.open(JSON_CONFIG_FILE, "w");
+    if (!configFile)
+    {
+        // Error, file did not open
+        M5.Log(ESP_LOG_DEBUG, "failed to open config file for writing");
+    }
+
+    // Serialize JSON data to write to file
+    serializeJsonPretty(json, Serial);
+    if (serializeJson(json, configFile) == 0)
+    {
+        // Error writing file
+        M5.Log(ESP_LOG_DEBUG, "Failed to write to file");
+    }
+    // Close file
+    configFile.close();
+
+    M5.Log(ESP_LOG_INFO, "Configuration saved. Restarting the Device!");
+    M5.delay(2000);
+    ESP.restart();
+
 }

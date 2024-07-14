@@ -72,6 +72,10 @@ namespace AiChatApi.Controllers
                     {
                         var s = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
                         WaveFileWriter.CreateWaveFile(filePath, s);
+                        //save raw file as well.
+                        //var rawFilePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\wavfiles\\", $"audio_{DateTime.Now.Ticks}.raw");
+                        //memoryStream.Seek(0, SeekOrigin.Begin);
+                        //await memoryStream.CopyToAsync(new FileStream(rawFilePath, FileMode.Create));
                     }
                     else
                     {

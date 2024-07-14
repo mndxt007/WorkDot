@@ -1,24 +1,29 @@
 #include <M5Unified.h>
 #include <WiFiManager.h>
 #include "Startup\Startup.h"
-#include "Audio\I2SMEMSSampler.h"
-#include <HTTPClient.h>
-#include <WebSocketsClient.h>
+#include "WebSockets\WebSocketsClient.h"
 #include <Secrets.h>
+#include <ArduinoJson.h>
 
 // defines
 //================
 #define SERVER_URL "https://192.168.1.7:7083/i2s_samples"
+#define SERVER_IP "192.168.29.145"
+
+// statics
+//================
+static constexpr const size_t record_size = 10000;
+static constexpr const size_t record_samplerate = 16000;
+static int16_t *rec_data;
 
 // globals
 //==================
 WiFiManager wm;
-I2SSampler *i2sSampler = nullptr;
-HTTPClient httpClient;
 WebSocketsClient webSocket;
 const int SAMPLE_SIZE = 16384;
-int16_t *samples = nullptr;
+// uint8_t *samples = nullptr;
 static TaskHandle_t wsTaskHandle = NULL;
+extern JsonDocument json;
 
 // Methods Declaration
 //===================
@@ -38,22 +43,34 @@ void setup(void)
     setupLogging();
     if (setupWifiManager(wm)) // used the samples from https://dronebotworkshop.com/wifimanager/
     {
+        const char *serverIp = json["serverIp"]; // Extract the server IP as a C-string
+        if (serverIp != nullptr)
+        {
+            M5.Log(ESP_LOG_DEBUG, "Server IP - %s", serverIp);
+        }
+        else
+        {
+            M5.Log(ESP_LOG_DEBUG, "Server IP not found in JSON");
+            serverIp = SERVER_IP;
+        }
         M5.Log(ESP_LOG_DEBUG, "Setting up Websockets");
         webSocket.onEvent(webSocketEvent);
-        webSocket.begin("192.168.1.10", 5189, "/ws");
+        webSocket.begin(serverIp, 5189, "/ws");
         // To-do - Remove hard coding
         webSocket.setReconnectInterval(5000);
     }
-    setupAudio(i2sSampler); // fork of https://github.com/atomic14/esp32_audio/tree/master
+
+    // using M5.Mic
+    // auto miccfg = M5.Mic.config();
+    M5.Mic.begin();
+    // miccfg.noise_filter_level = (miccfg.noise_filter_level + 8) & 255;
+    // M5.Mic.config(miccfg);
 
     // Audio Setup
     //=======================
     // Create the samples buffer
-    samples = (int16_t *)malloc(sizeof(uint16_t) * SAMPLE_SIZE);
-    if (!samples)
-    {
-        M5.Log(ESP_LOG_ERROR, "Failed to allocate memory for samples");
-    }
+    rec_data = (typeof(rec_data))heap_caps_malloc(record_size * sizeof(int16_t), MALLOC_CAP_8BIT);
+    memset(rec_data, 0, record_size * sizeof(int16_t));
 
     // Tasks
     //=====================
@@ -63,27 +80,40 @@ void setup(void)
 void loop(void)
 {
     M5.update();
-    //webSocket.loop();
+    // webSocket.loop();
     if (M5.BtnA.wasHold())
     {
-        quickVibrate();
-        M5.Log(ESP_LOG_INFO, "\nRecording Started....");
-        int samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
-        sendDataW(true, false, (uint8_t *)samples, samples_read * sizeof(uint16_t));
+        if (M5.Mic.record(rec_data, record_size, record_samplerate, false))
+        {
+            sendDataW(true, false, (uint8_t *)rec_data, record_size * sizeof(uint16_t));
+            quickVibrate();
+            M5.Log(ESP_LOG_INFO, "\nRecording Started....");
+        }
+        else
+        {
+            M5.Log(ESP_LOG_ERROR, "Record failed");
+        }
         while (!M5.BtnB.wasHold())
         {
-            samples_read = i2sSampler->read(samples, SAMPLE_SIZE);
-            sendDataW(false, false, (uint8_t *)samples, samples_read * sizeof(uint16_t));
-            M5.Log(ESP_LOG_INFO, "....");
-            M5.update();
-           // webSocket.loop();
+            if (M5.Mic.record(rec_data, record_size, record_samplerate, false))
+            {
+                sendDataW(false, false, (uint8_t *)rec_data, record_size * sizeof(uint16_t));
+                M5.Log(ESP_LOG_INFO, "....");
+                M5.update();
+            }
+            else
+            {
+                M5.Log(ESP_LOG_ERROR, "Record failed");
+            }
+            // webSocket.loop();
         }
-        sendDataW(false, true, (uint8_t *)samples, 0);
-        M5.Log(ESP_LOG_INFO, "Recording Ended.");
         quickVibrate();
+        sendDataW(false, true, (uint8_t *)rec_data, 0);
+        M5.Log(ESP_LOG_INFO, "Recording Ended.");
     }
     if (M5.BtnPWR.isPressed() || M5.BtnC.wasHold())
     {
+        quickVibrate();
         wm.startConfigPortal(SSID, PASS);
     }
     M5.delay(200);
@@ -110,16 +140,6 @@ if (SD.begin(GPIO_NUM_4, SPI, 25000000))
 void sendDataW(bool first, bool last, uint8_t *bytes, size_t count)
 {
     webSocket.sendBIN(first, last, bytes, count, false);
-}
-
-void sendDataHttp(uint8_t *bytes, size_t count)
-{
-    // send them off to the server
-    httpClient.begin(SERVER_URL);
-    httpClient.addHeader("content-type", "application/octet-stream");
-    // see if the above 2 lines are necessary every time.
-    httpClient.POST(bytes, count);
-    httpClient.end();
 }
 
 void quickVibrate()
@@ -163,7 +183,7 @@ void webSocketTask(void *parameter)
     while (true)
     {
         webSocket.loop();
-        vTaskDelay(10 / portTICK_PERIOD_MS);  // Adjust delay as needed
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust delay as needed
     }
 }
 
