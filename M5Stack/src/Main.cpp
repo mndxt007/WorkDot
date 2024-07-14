@@ -1,15 +1,14 @@
 #include <M5Unified.h>
 #include <WiFiManager.h>
 #include "Startup\Startup.h"
-#include "Audio\I2SMEMSSampler.h"
-#include <HTTPClient.h>
 #include "WebSockets\WebSocketsClient.h"
 #include <Secrets.h>
-#include "perfmon.h"
+#include <ArduinoJson.h>
 
 // defines
 //================
 #define SERVER_URL "https://192.168.1.7:7083/i2s_samples"
+#define SERVER_IP "192.168.29.145"
 
 // statics
 //================
@@ -20,12 +19,11 @@ static int16_t *rec_data;
 // globals
 //==================
 WiFiManager wm;
-I2SSampler *i2sSampler = nullptr;
-HTTPClient httpClient;
 WebSocketsClient webSocket;
 const int SAMPLE_SIZE = 16384;
 // uint8_t *samples = nullptr;
 static TaskHandle_t wsTaskHandle = NULL;
+extern JsonDocument json;
 
 // Methods Declaration
 //===================
@@ -45,16 +43,25 @@ void setup(void)
     setupLogging();
     if (setupWifiManager(wm)) // used the samples from https://dronebotworkshop.com/wifimanager/
     {
+        const char *serverIp = json["serverIp"]; // Extract the server IP as a C-string
+        if (serverIp != nullptr)
+        {
+            M5.Log(ESP_LOG_DEBUG, "Server IP - %s", serverIp);
+        }
+        else
+        {
+            M5.Log(ESP_LOG_DEBUG, "Server IP not found in JSON");
+            serverIp = SERVER_IP;
+        }
         M5.Log(ESP_LOG_DEBUG, "Setting up Websockets");
         webSocket.onEvent(webSocketEvent);
-        webSocket.begin("192.168.137.1", 5189, "/ws");
+        webSocket.begin(serverIp, 5189, "/ws");
         // To-do - Remove hard coding
         webSocket.setReconnectInterval(5000);
     }
-    // setupAudio(i2sSampler); // fork of https://github.com/atomic14/esp32_audio/tree/master
 
     // using M5.Mic
-    //auto miccfg = M5.Mic.config();
+    // auto miccfg = M5.Mic.config();
     M5.Mic.begin();
     // miccfg.noise_filter_level = (miccfg.noise_filter_level + 8) & 255;
     // M5.Mic.config(miccfg);
@@ -133,16 +140,6 @@ if (SD.begin(GPIO_NUM_4, SPI, 25000000))
 void sendDataW(bool first, bool last, uint8_t *bytes, size_t count)
 {
     webSocket.sendBIN(first, last, bytes, count, false);
-}
-
-void sendDataHttp(uint8_t *bytes, size_t count)
-{
-    // send them off to the server
-    httpClient.begin(SERVER_URL);
-    httpClient.addHeader("content-type", "application/octet-stream");
-    // see if the above 2 lines are necessary every time.
-    httpClient.POST(bytes, count);
-    httpClient.end();
 }
 
 void quickVibrate()

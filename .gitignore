@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 AIChatApi/wwwroot/wavfiles/*
 AiChatApi/appsettings.json
+AiChatApi/appsettings.Development.json
+AiChatApi/appsettings.json
