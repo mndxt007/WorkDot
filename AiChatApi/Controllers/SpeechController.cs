@@ -37,7 +37,17 @@ namespace AiChatApi.Controllers
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await ReceiveAudio(webSocket);
+                HttpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent);
+                int delay;
+                if (userAgent == "arduino-WebSocket-Client")
+                {
+                    delay = 200;
+                }
+                else
+                {
+                    delay = 100;
+                }
+                await ReceiveAudio(webSocket,delay);
             }
             else
             {
@@ -47,7 +57,7 @@ namespace AiChatApi.Controllers
 
         #region WebSocket Methods
         
-        private async Task ReceiveAudio(WebSocket webSocket)
+        private async Task ReceiveAudio(WebSocket webSocket,int delay)
         {
             try
             {
@@ -79,7 +89,7 @@ namespace AiChatApi.Controllers
 
                     if (speechRecognitionResult != null && speechRecognitionResult.Reason == ResultReason.RecognizedSpeech)
                     {
-                        await SendRecognizedResponse(webSocket, speechRecognitionResult.Text);
+                        await SendRecognizedResponse(webSocket, speechRecognitionResult.Text,delay);
                     }
                     else
                     {
@@ -95,9 +105,9 @@ namespace AiChatApi.Controllers
             }
         }
 
-        private async Task SendRecognizedResponse(WebSocket webSocket, string recognizedText)
+        private async Task SendRecognizedResponse(WebSocket webSocket, string recognizedText, int delay)
         {
-            var userTextBuffer = Encoding.UTF8.GetBytes($"\nYou: {recognizedText}\nAI:");
+            var userTextBuffer = Encoding.UTF8.GetBytes($"\nYou: {recognizedText}\nAI: ");
             await webSocket.SendAsync(new ArraySegment<byte>(userTextBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
 
             var completion = GetChatCompletion(recognizedText);
@@ -106,7 +116,7 @@ namespace AiChatApi.Controllers
             {
                 await webSocket.SendAsync(item.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
                 response.Append(item.Content);
-                await Task.Delay(100);
+                await Task.Delay(delay);
             }
 
             _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.ToString()));

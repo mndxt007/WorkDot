@@ -6,3 +6,4 @@ void onWebServerStart();
 void setupWebsockets(WebSocketsClient webSocket, WebSocketsClient::WebSocketClientEvent webSocketEvent);
 bool loadConfigFile();
 void saveConfigFile();
+void setupUI();

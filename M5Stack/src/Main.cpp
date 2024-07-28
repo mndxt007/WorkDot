@@ -4,17 +4,22 @@
 #include "WebSockets\WebSocketsClient.h"
 #include <Secrets.h>
 #include <ArduinoJson.h>
+#include <Graphics/ui.h>
+#include <lvgl.h>
+#include "esp_task_wdt.h"
 
 // defines
 //================
-#define SERVER_URL "https://192.168.1.7:7083/i2s_samples"
 #define SERVER_IP "192.168.29.145"
+#define QUEUE_LENGTH 10
+#define ITEM_SIZE sizeof(char[1024])
 
 // statics
 //================
 static constexpr const size_t record_size = 10000;
 static constexpr const size_t record_samplerate = 16000;
 static int16_t *rec_data;
+static TaskHandle_t wsTaskHandle = NULL;
 
 // globals
 //==================
@@ -22,8 +27,10 @@ WiFiManager wm;
 WebSocketsClient webSocket;
 const int SAMPLE_SIZE = 16384;
 // uint8_t *samples = nullptr;
-static TaskHandle_t wsTaskHandle = NULL;
 extern JsonDocument json;
+bool recording = false;
+SemaphoreHandle_t xMutex;
+QueueHandle_t payloadQueue;
 
 // Methods Declaration
 //===================
@@ -33,6 +40,11 @@ void sendDataW(bool first, bool last, uint8_t *bytes, size_t count);
 void quickVibrate();
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length);
 void webSocketTask(void *parameter);
+void lvtask(void *parameter);
+void StartRecording(lv_event_t *e);
+void StopRecording(lv_event_t *e);
+void my_log_cb(lv_log_level_t level, const char *buf);
+void update_textarea_async(void *param);
 
 // Arduino Methods
 //==================
@@ -41,6 +53,12 @@ void setup(void)
     auto cfg = M5.config();
     M5.begin(cfg);
     setupLogging();
+    setupUI();
+    xTaskCreatePinnedToCore(lvtask, "lvtask", 8192, NULL, 2, NULL, 0);
+    // Disabling due to watch dog timer resets:
+    esp_task_wdt_delete(xTaskGetIdleTaskHandleForCPU(0));
+
+
     if (setupWifiManager(wm)) // used the samples from https://dronebotworkshop.com/wifimanager/
     {
         const char *serverIp = json["serverIp"]; // Extract the server IP as a C-string
@@ -53,7 +71,7 @@ void setup(void)
             M5.Log(ESP_LOG_DEBUG, "Server IP not found in JSON");
             serverIp = SERVER_IP;
         }
-        M5.Log(ESP_LOG_DEBUG, "Setting up Websockets");
+        M5.Log(ESP_LOG_DEBUG, "Setting up Websockets with Server %s", serverIp);
         webSocket.onEvent(webSocketEvent);
         webSocket.begin(serverIp, 5189, "/ws");
         // To-do - Remove hard coding
@@ -72,16 +90,32 @@ void setup(void)
     rec_data = (typeof(rec_data))heap_caps_malloc(record_size * sizeof(int16_t), MALLOC_CAP_8BIT);
     memset(rec_data, 0, record_size * sizeof(int16_t));
 
+// UI Setup
+//========================
+    #if LV_USE_LOG != 0
+        lv_log_register_print_cb(my_log_cb);
+    #endif
+    xMutex = xSemaphoreCreateMutex();
+    if (xMutex == NULL)
+    {
+        M5.Log(ESP_LOG_ERROR,"Mutex failed");
+    }
+    lv_textarea_set_cursor_click_pos(ui_TextArea1, false);
+    lv_obj_add_event_cb((lv_obj_t *)ui_Image12, StartRecording, LV_EVENT_LONG_PRESSED, NULL);
+    lv_obj_add_event_cb((lv_obj_t *)ui_RecordSmall, StartRecording, LV_EVENT_LONG_PRESSED, NULL);
+    lv_obj_add_event_cb((lv_obj_t *)ui_Image12, StopRecording, LV_EVENT_RELEASED, NULL);
+    lv_obj_add_event_cb((lv_obj_t *)ui_RecordSmall, StopRecording, LV_EVENT_RELEASED, NULL);
+    payloadQueue = xQueueCreate(QUEUE_LENGTH, ITEM_SIZE);
     // Tasks
     //=====================
-    xTaskCreate(webSocketTask, "WebSocketTask", 4096, NULL, 1, &wsTaskHandle);
+    // xTaskCreate(webSocketTask, "WebSocketTask", 4096, NULL, 1, &wsTaskHandle);
+    // xTaskCreatePinnedToCore(record, "recordTask", 8192, NULL, 2, NULL, 0);
+    xTaskCreatePinnedToCore(webSocketTask, "WebSocketTask", 8192, NULL, 1, &wsTaskHandle, 1);
 }
 
 void loop(void)
 {
-    M5.update();
-    // webSocket.loop();
-    if (M5.BtnA.wasHold())
+    if (recording)
     {
         if (M5.Mic.record(rec_data, record_size, record_samplerate, false))
         {
@@ -93,7 +127,7 @@ void loop(void)
         {
             M5.Log(ESP_LOG_ERROR, "Record failed");
         }
-        while (!M5.BtnB.wasHold())
+        while (recording)
         {
             if (M5.Mic.record(rec_data, record_size, record_samplerate, false))
             {
@@ -111,12 +145,12 @@ void loop(void)
         sendDataW(false, true, (uint8_t *)rec_data, 0);
         M5.Log(ESP_LOG_INFO, "Recording Ended.");
     }
-    if (M5.BtnPWR.isPressed() || M5.BtnC.wasHold())
-    {
-        quickVibrate();
-        wm.startConfigPortal(SSID, PASS);
-    }
-    M5.delay(200);
+    // if (M5.BtnPWR.isPressed() || M5.BtnC.wasHold())
+    // {
+    //     quickVibrate();
+    //     wm.startConfigPortal(SSID, PASS);
+    // }
+    vTaskDelay(10 / portTICK_PERIOD_MS);
 }
 
 // Method Definition
@@ -142,11 +176,23 @@ void sendDataW(bool first, bool last, uint8_t *bytes, size_t count)
     webSocket.sendBIN(first, last, bytes, count, false);
 }
 
+void StartRecording(lv_event_t *e)
+{
+    recording = true;
+    M5.Log(ESP_LOG_INFO, "Recording enabled");
+}
+
 void quickVibrate()
 {
     M5.Power.setVibration(250);
     M5.delay(100);
     M5.Power.setVibration(0);
+}
+
+void StopRecording(lv_event_t *e)
+{
+    recording = false;
+    M5.Log(ESP_LOG_INFO, "Recording disabled");
 }
 
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
@@ -155,15 +201,25 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
     {
     case WStype_DISCONNECTED:
         M5.Log(ESP_LOG_ERROR, "Server not connected, retrying..\n");
+        lv_imagebutton_set_state(ui_ServerConn, LV_IMAGEBUTTON_STATE_CHECKED_RELEASED);
         break;
     case WStype_CONNECTED:
         M5.Log(ESP_LOG_INFO, "Server Connected");
+        lv_imagebutton_set_state(ui_ServerConn, LV_IMAGEBUTTON_STATE_CHECKED_PRESSED);
         break;
     case WStype_TEXT:
         // M5.Log(ESP_LOG_INFO,"Response: %s\n", payload);
         if (payload != nullptr)
         {
-            M5.Display.printf("%s", payload);
+            //M5.Log(ESP_LOG_INFO, "Incoming data start");
+
+            if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE) {
+                xQueueSend(payloadQueue, (void *)payload, portMAX_DELAY);
+                xSemaphoreGive(xMutex);
+            }
+
+            lv_async_call(update_textarea_async, NULL);
+            //M5.Log(ESP_LOG_INFO, "Incoming data end");
         }
         break;
     case WStype_BIN:
@@ -184,6 +240,32 @@ void webSocketTask(void *parameter)
     {
         webSocket.loop();
         vTaskDelay(10 / portTICK_PERIOD_MS); // Adjust delay as needed
+    }
+}
+
+void lvtask(void *parameter)
+{
+    while (1)
+    {
+        lv_task_handler();
+        vTaskDelay(1); // Adjust delay as needed
+    }
+}
+
+void my_log_cb(lv_log_level_t level, const char *buf)
+{
+    M5.Log(ESP_LOG_INFO, buf);
+}
+
+void update_textarea_async(void *param)
+{
+    char payload[1024];
+    if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE) {
+        if (xQueueReceive(payloadQueue, &payload, 0) == pdTRUE)
+        {
+            lv_textarea_add_text(ui_TextArea1, payload);
+        }
+        xSemaphoreGive(xMutex);
     }
 }
 
