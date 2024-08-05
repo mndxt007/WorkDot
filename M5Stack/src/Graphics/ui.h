@@ -44,6 +44,7 @@ extern lv_obj_t * ui_Image12;
 extern lv_obj_t * ui_Spinner1;
 extern lv_obj_t * ui_Wifi;
 extern lv_obj_t * ui_ServerConn;
+void ui_event_Settings(lv_event_t * e);
 extern lv_obj_t * ui_Settings;
 // SCREEN: ui_Chat
 void ui_Chat_screen_init(void);
@@ -52,7 +53,16 @@ extern lv_obj_t * ui_TextArea1;
 void ui_event_RecordSmall(lv_event_t * e);
 extern lv_obj_t * ui_RecordSmall;
 extern lv_obj_t * ui_Spinner2;
+void ui_event_Settings2(lv_event_t * e);
 extern lv_obj_t * ui_Settings2;
+// SCREEN: ui_Setup
+void ui_Setup_screen_init(void);
+extern lv_obj_t * ui_Setup;
+extern lv_obj_t * ui_Panel1;
+extern lv_obj_t * ui_Label1;
+extern lv_obj_t * ui_SetupMessage;
+void ui_event_BackButton(lv_event_t * e);
+extern lv_obj_t * ui_BackButton;
 extern lv_obj_t * ui____initial_actions0;
 
 
@@ -62,16 +72,13 @@ LV_IMG_DECLARE(ui_img_ellipse_5_png);    // assets/Ellipse 5.png
 LV_IMG_DECLARE(ui_img_ellipse_6_png);    // assets/Ellipse 6.png
 LV_IMG_DECLARE(ui_img_workdot_png);    // assets/WorkDot.png
 LV_IMG_DECLARE(ui_img_microphone_10307974_1_png);    // assets/microphone_10307974 1.png
+LV_IMG_DECLARE(ui_img_2128174856);    // assets/Button1 (1).png
 LV_IMG_DECLARE(ui_img_button1_png);    // assets/Button1.png
-LV_IMG_DECLARE(ui_img_2128171783);    // assets/Button1 (2).png
+LV_IMG_DECLARE(ui_img_1682388829);    // assets/Button2 (1).png
 LV_IMG_DECLARE(ui_img_button2_png);    // assets/Button2.png
-LV_IMG_DECLARE(ui_img_1682391902);    // assets/Button2 (2).png
-LV_IMG_DECLARE(ui_img_setting_png);    // assets/setting.png
+LV_IMG_DECLARE(ui_img_vector_png);    // assets/Vector.png
 LV_IMG_DECLARE(ui_img_record_small_png);    // assets/Record_Small.png
-LV_IMG_DECLARE(ui_img_ellipse_4_png);    // assets/Ellipse 4.png
-LV_IMG_DECLARE(ui_img_ellipse_5_png);    // assets/Ellipse 5.png
-LV_IMG_DECLARE(ui_img_ellipse_6_png);    // assets/Ellipse 6.png
-LV_IMG_DECLARE(ui_img_flexibility_12969792_1_png);    // assets/flexibility_12969792 1.png
+LV_IMG_DECLARE(ui_img_172201545);    // assets/backward-solid 1.png
 
 
 

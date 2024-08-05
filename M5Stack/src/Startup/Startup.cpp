@@ -14,6 +14,7 @@
 
 constexpr int32_t HOR_RES = 320;
 constexpr int32_t VER_RES = 240;
+std::string setupMessage = std::string("\nPlease connect to ") + SSID + "Hotspot and setup device. Device will be paused until this is done.";
 
 auto serverIP = WiFiManagerParameter("server_ip", "Server IP", "127.0.0.1", 50);
 JsonDocument json;
@@ -108,7 +109,8 @@ bool setupWifiManager(WiFiManager &wm)
 
 void onWebServerStart()
 {
-    M5.Log(ESP_LOG_INFO, "\nPlease connect to %s and setup device", SSID);
+    M5.Log(ESP_LOG_INFO, setupMessage.c_str());
+    //lv_textarea_set_text(ui_SetupMessage, setupMessage.c_str());
 }
 
 void my_display_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
@@ -160,9 +162,11 @@ void setupUI()
     lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
 
     lv_indev_set_read_cb(indev, my_touchpad_read);
+
     // lv_display_set_rotation(display,LV_DISPLAY_ROTATION_90);
     // M5.Display.setRotation(90);
     ui_init();
+    lv_textarea_set_text(ui_SetupMessage, setupMessage.c_str());
 }
 
 bool loadConfigFile()
