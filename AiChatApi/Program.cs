@@ -1,17 +1,20 @@
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.SemanticKernel;
+using AiChatApi.KernelPlugins;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-
-builder.Services.AddSingleton<IChatCompletionService>(sp =>
-{
-    return new AzureOpenAIChatCompletionService(builder.Configuration["AzureOpenAi:DeploymentName"]!,
+builder.Services.AddAzureOpenAIChatCompletion(builder.Configuration["AzureOpenAi:DeploymentName"]!,
     builder.Configuration["AzureOpenAi:Endpoint"]!,
     builder.Configuration["AzureOpenAi:ApiKey"]!);
-});
+
+var kernel = builder.Services.AddKernel();
+kernel.Plugins.AddFromPromptDirectory(Path.Combine(Environment.CurrentDirectory, "Kernel\\Plugins"));
+kernel.Plugins.AddFromType<SKFunctions>();
+kernel.Services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
 
 var app = builder.Build();
 

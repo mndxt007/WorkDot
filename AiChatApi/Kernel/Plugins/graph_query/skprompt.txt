@@ -1,0 +1,4 @@
+﻿Please create a Microsoft Graph Query based on the user Input. Do not include any other text in the response.
+If the input is not related to Graph, please respond with "Invalid Input".
+Current Time is {{$date}}
+Input - {{$input}}
