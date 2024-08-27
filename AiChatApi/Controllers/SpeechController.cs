@@ -3,6 +3,7 @@ using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using NAudio.Wave;
 using System.Net.WebSockets;
 using System.Text;
@@ -16,12 +17,15 @@ namespace AiChatApi.Controllers
         private readonly ILogger<SpeechController> _logger;
         private readonly IChatCompletionService _chatCompletionService;
         private readonly ChatHistory _chatHistory;
+        private readonly Kernel _kernel;
+        private readonly OpenAIPromptExecutionSettings _openAIPromptExecutionSettings;
 
         public SpeechController(
             IConfiguration configuration,
             ILogger<SpeechController> logger,
             IHostEnvironment environment,
-            IChatCompletionService chatCompletionService)
+            IChatCompletionService chatCompletionService,
+            Kernel kernel)
         {
             _configuration = configuration;
             _logger = logger;
@@ -29,6 +33,11 @@ namespace AiChatApi.Controllers
             _chatCompletionService = chatCompletionService;
             _chatHistory = [];
             _chatHistory.AddSystemMessage(_configuration["SystemPrompt"]!);
+            _kernel = kernel;
+            _openAIPromptExecutionSettings = new()
+            {
+                ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+            };
         }
 
         [Route("/ws")]
@@ -135,7 +144,7 @@ namespace AiChatApi.Controllers
         private IAsyncEnumerable<StreamingChatMessageContent> GetChatCompletion(string speechText)
         {
             _chatHistory.AddUserMessage(speechText);
-            return _chatCompletionService.GetStreamingChatMessageContentsAsync(_chatHistory);
+            return _chatCompletionService.GetStreamingChatMessageContentsAsync(_chatHistory,_openAIPromptExecutionSettings,_kernel);
         }
         
         #endregion
