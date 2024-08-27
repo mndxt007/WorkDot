@@ -120,8 +120,6 @@ namespace AiChatApi.Controllers
             await webSocket.SendAsync(new ArraySegment<byte>(userTextBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
 
             var completion = GetChatCompletion(recognizedText);
-            //var graphQuery = await _kernel.InvokeAsync("Plugins", "GraphQuery",new () { ["input"] = recognizedText, ["date"] = System.DateTime.Now });
-            var graphQuery = await _chatCompletionService.GetChatMessageContentAsync(recognizedText, _openAIPromptExecutionSettings, _kernel);
             var response = new StringBuilder();
             await foreach (var item in completion)
             {

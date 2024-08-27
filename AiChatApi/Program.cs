@@ -13,7 +13,7 @@ builder.Services.AddAzureOpenAIChatCompletion(builder.Configuration["AzureOpenAi
 
 var kernel = builder.Services.AddKernel();
 kernel.Plugins.AddFromPromptDirectory(Path.Combine(Environment.CurrentDirectory, "Kernel\\Plugins"));
-kernel.Plugins.AddFromType<SKFunctions>();
+kernel.Plugins.AddFromType<SKFunctions>("retrieve_emails");
 kernel.Services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
 
 var app = builder.Build();
@@ -33,16 +33,6 @@ app.UseWebSockets(webSocketOptions);
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.MapPost("/i2s_samples", async (HttpContext context, IHostEnvironment _environment, ILogger<Program> logger) =>
-{
-    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot\\rawfiles", "audio_i2s.raw");
-    await using (var fileStream = new FileStream(filePath, FileMode.Append))
-    {
-        await context.Request.Body.CopyToAsync(fileStream);
-    }
-    logger.LogInformation($"Received I2S bytes and appended to {filePath}");
-    await context.Response.WriteAsync("OK");
-});
 app.MapControllers();
 
 app.Run();
