@@ -1,37 +1,28 @@
 ﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
+using WorkDot.Api.Models;
+using WorkDot.Api.Services;
 
 namespace AiChatApi.KernelPlugins
 {
     public class KernelFunctions
     {
-        [KernelFunction("graph_call")]
-        [Description("Fetches/Retrieves my Emails on the current time and graph query and returns list of emails")]
-         public Task<string[]> MakeGraphCallAsync([Description("grapth query to retrieve emails based on the user input")] string graphEndpoint)
+        private readonly IServiceProvider _serviceProvider;
+
+        public KernelFunctions(IServiceProvider serviceProvider)
         {
-            // Implement the logic to make the Graph API call here
-            // For example, you can use HttpClient to make the request
+            _serviceProvider = serviceProvider;
+        }
 
-           Console.WriteLine("Making Graph API call to: " + graphEndpoint);
-
-            return Task.FromResult<string[]>(["""
-                From: Manoj Dixit 
-                Sent: 26 August 2024 23:51
-                To: leegu@contoso.com
-                Subject: RE: [EXTERNAL] RE: We've noticed several alerts... - TrackingID#2404090030005006
-
-                Hello Lee,
-
-                I hope you are doing well.
-
-                I am following up to understand if you managed to collect in an occurrence of the issue. For any queries please reach. 
-
-                I'm wondering if we can temporarily archive the case until further investigation is needed. Please rest assured that your satisfaction and the resolution of your issue remain our top priorities. By temporarily archiving the case, we can allocate our support resources more effectively and pause any unnecessary follow-ups until necessary. However, I want to emphasize that we will always be ready and more than willing to resume work on the case whenever you are ready.
-
-                If you decide to proceed with the temporary archiving of your case, you can reopen this case within certain months or open a ticket referring this case. Simply send me an email with your case number whenever you're prepared to revisit the matter, and I will be more than happy to reopen it for you promptly.
-
-                Please let me know your thoughts on this. We would appreciate your understanding and co-operation in this matter.
-                """]);
+        [KernelFunction("graph_call")]
+        [Description("Fetches/Retrieves/Gets/Shows, my Emails based on the user input criteria")]
+        public async Task<List<EmailDetails>> RetrieveEmailAsync([Description("A Microsoft Graph API query string for retrieving emails based on the user input, following the format $top=[number]&$orderby=receivedDateTime desc&$filter=[filter conditions], with rules for $top, $orderby, and $filter as specified.")] string queryParmeter)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var _graphService = scope.ServiceProvider.GetRequiredService<GraphService>();
+                return await _graphService.GetUserEmailsWithRawQueryAsync(queryParmeter);
+            }
         }
 
         [KernelFunction("get_time")]

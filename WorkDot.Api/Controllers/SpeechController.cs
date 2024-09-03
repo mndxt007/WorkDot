@@ -7,6 +7,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using NAudio.Wave;
 using System.Net.WebSockets;
 using System.Text;
+using WorkDot.Api.Services;
 
 namespace WorkDot.Api.Controllers
 {
@@ -19,13 +20,15 @@ namespace WorkDot.Api.Controllers
         private readonly ChatHistory _chatHistory;
         private readonly Kernel _kernel;
         private readonly OpenAIPromptExecutionSettings _openAIPromptExecutionSettings;
+        private readonly GraphService _graphService;
 
         public SpeechController(
             IConfiguration configuration,
             ILogger<SpeechController> logger,
             IHostEnvironment environment,
             IChatCompletionService chatCompletionService,
-            Kernel kernel)
+            Kernel kernel,
+            GraphService graphService)
         {
             _configuration = configuration;
             _logger = logger;
@@ -38,6 +41,7 @@ namespace WorkDot.Api.Controllers
             {
                 ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
             };
+            _graphService = graphService;
         }
 
         [Route("/ws")]

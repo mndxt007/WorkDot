@@ -1,19 +1,30 @@
-using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
-using Microsoft.SemanticKernel;
 using AiChatApi.KernelPlugins;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Graph;
+using Microsoft.Identity.Web;
+using Microsoft.SemanticKernel;
+using WorkDot.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Configure Azure AD authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"))
+    .EnableTokenAcquisitionToCallDownstreamApi()
+    .AddMicrosoftGraphAppOnly(authProvider => new GraphServiceClient(authProvider))
+    .AddInMemoryTokenCaches()
+    .AddDownstreamApi("GraphApi", builder.Configuration.GetSection("GraphApi"));
+
 builder.Services.AddAzureOpenAIChatCompletion(builder.Configuration["AzureOpenAi:DeploymentName"]!,
     builder.Configuration["AzureOpenAi:Endpoint"]!,
     builder.Configuration["AzureOpenAi:ApiKey"]!);
 
-var kernel = builder.Services.AddKernel();
-kernel.Plugins.AddFromType<KernelFunctions>("graph_functions");
-kernel.Services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
+builder.Services.AddKernel().Plugins.AddFromType<KernelFunctions>("graph_functions");
+
+builder.Services.AddTransient<GraphService>();
 
 var app = builder.Build();
 
