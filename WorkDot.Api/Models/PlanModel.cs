@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace WorkDot.Api.Models
 {
@@ -9,6 +10,9 @@ namespace WorkDot.Api.Models
         public string Response { get; set; } = "Take Action on the email";
         public string Sentiment { get; set; } = "Default Sentiment";
         public int Priority { get; set; } = 5;
+        [JsonPropertyName("conversationId")]
+        public string ConversationId { get; set; }
+
     }
 
     public class Actions

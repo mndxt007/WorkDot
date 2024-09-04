@@ -19,7 +19,7 @@ namespace AiChatApi.KernelPlugins
 
         [KernelFunction("graph_call")]
         [Description("Fetches/Retrieves/Gets/Shows Emails based on the user input criteria")]
-        public async Task<List<PlanModel>> RetrieveEmailAsync([Description("A Microsoft Graph API query string for retrieving emails based on the user input, following the format $top=[number]&$orderby=receivedDateTime desc&$filter=[filter conditions], with rules for $top, $orderby, and $filter as specified.")] string queryParmeter)
+        public async Task<WidgetModel> RetrieveEmailAsync([Description("A Microsoft Graph API query string for retrieving emails based on the user input, following the format $top=[number]&$orderby=receivedDateTime desc&$filter=[filter conditions], with rules for $top, $orderby, and $filter as specified.")] string queryParmeter)
         {
             using (var scope = _serviceProvider.CreateScope())
             {
@@ -29,19 +29,18 @@ namespace AiChatApi.KernelPlugins
                 var argument = new KernelArguments()
                 {
                     ["actions"] = JsonSerializer.Serialize(new Actions()),
+                    ["messages"] = JsonSerializer.Serialize(messages)
                 };
-                var planResult = new List<PlanModel>();
-                //need to optmize calls to Open AI.
-                foreach (var item in messages)
+                var result = await _kernel.InvokeAsync<string>("plugins", "email_summary", argument);
+                var plans = JsonSerializer.Deserialize<List<PlanModel>>(result!)!;
+                plans.ForEach(plan =>
+                plan.Message = messages.Find(message => message.ConverstionId == plan.ConversationId)!);
+                
+                return new WidgetModel()
                 {
-                    argument.AddOrReplace("message", JsonSerializer.Serialize(item));
-                    var result = await _kernel.InvokeAsync<string>("plugins", "email_summary", argument);
-                    var planModel = JsonSerializer.Deserialize<PlanModel>(result!);
-                    planModel!.Message = item;
-                    planResult.Add(planModel);
-
-                }
-                return planResult;
+                    Widget= WidgetType.Plan,
+                    Payload= plans
+                };
             }
         }
 
