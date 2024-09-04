@@ -1,4 +1,6 @@
-﻿using Microsoft.SemanticKernel;
+﻿using Microsoft.Kiota.Abstractions.Extensions;
+using Microsoft.SemanticKernel;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json;
 using WorkDot.Api.Models;
@@ -27,11 +29,19 @@ namespace AiChatApi.KernelPlugins
                 var argument = new KernelArguments()
                 {
                     ["actions"] = JsonSerializer.Serialize(new Actions()),
-                    ["messages"] = JsonSerializer.Serialize(messages)
                 };
-                var result = await _kernel.InvokeAsync<string>("plugins","email_summary", argument);
+                var planResult = new List<PlanModel>();
+                //need to optmize calls to Open AI.
+                foreach (var item in messages)
+                {
+                    argument.AddOrReplace("message", JsonSerializer.Serialize(item));
+                    var result = await _kernel.InvokeAsync<string>("plugins", "email_summary", argument);
+                    var planModel = JsonSerializer.Deserialize<PlanModel>(result!);
+                    planModel!.Message = item;
+                    planResult.Add(planModel);
 
-                return JsonSerializer.Deserialize<List<PlanModel>>(result!)!;
+                }
+                return planResult;
             }
         }
 
