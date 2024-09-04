@@ -4,6 +4,7 @@ using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.SemanticKernel;
 using WorkDot.Api.Services;
+using static AiChatApi.KernelPlugins.KernelFunctions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +23,13 @@ builder.Services.AddAzureOpenAIChatCompletion(builder.Configuration["AzureOpenAi
     builder.Configuration["AzureOpenAi:Endpoint"]!,
     builder.Configuration["AzureOpenAi:ApiKey"]!);
 
-builder.Services.AddKernel().Plugins.AddFromType<KernelFunctions>("graph_functions");
+var kernel = builder.Services.AddKernel();
+kernel.Plugins.AddFromType<KernelFunctions>("graph_functions");
+kernel.Plugins.AddFromPromptDirectory(Path.Combine(Environment.CurrentDirectory, "Kernel\\Plugins"));
+kernel.Services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
 
+#pragma warning disable SKEXP0001
+builder.Services.AddSingleton<IAutoFunctionInvocationFilter>(new FunctionCallsFilter());
 builder.Services.AddTransient<GraphService>();
 
 var app = builder.Build();

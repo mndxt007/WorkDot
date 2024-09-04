@@ -122,7 +122,7 @@ namespace WorkDot.Api.Controllers
         {
             var userTextBuffer = Encoding.UTF8.GetBytes($"\nYou: {recognizedText}\nAI: ");
             await webSocket.SendAsync(new ArraySegment<byte>(userTextBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
-
+            /* Commenting for Debug
             var completion = GetChatCompletion(recognizedText);
             var response = new StringBuilder();
             await foreach (var item in completion)
@@ -133,6 +133,11 @@ namespace WorkDot.Api.Controllers
             }
 
             _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.ToString()));
+            */
+            _chatHistory.AddUserMessage(recognizedText);    
+            var response = await _chatCompletionService.GetChatMessageContentAsync(_chatHistory,_openAIPromptExecutionSettings,_kernel);
+            await webSocket.SendAsync(Encoding.UTF8.GetBytes(response.Content!), WebSocketMessageType.Text, true, CancellationToken.None);
+            _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.Content!));
         }
 
         private async Task SendUnrecognizedResponse(WebSocket webSocket)

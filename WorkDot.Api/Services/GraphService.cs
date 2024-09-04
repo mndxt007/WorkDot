@@ -26,7 +26,7 @@ namespace WorkDot.Api.Services
             try
             {
                 var baseUrl = "https://graph.microsoft.com/v1.0/users/leeg@MODERNCOMMS884601.onmicrosoft.com/messages";
-                var fullUrl = $"{baseUrl}?{queryParms}&$select=bodyPreview,subject,toRecipients,receivedDateTime";
+                var fullUrl = $"{baseUrl}?{queryParms}&$select=bodyPreview,subject,toRecipients,receivedDateTime,conversationId";
 
                 var requestInformation = new RequestInformation
                 {
@@ -43,7 +43,8 @@ namespace WorkDot.Api.Services
                         BodyPreview = m.BodyPreview,
                         Subject = m.Subject,
                         Recipients = m.ToRecipients?.Select(r => r.EmailAddress?.Address).ToList(),
-                        ReceivedDateTime = m.ReceivedDateTime?.DateTime ?? DateTime.MinValue
+                        ReceivedDateTime = m.ReceivedDateTime?.DateTime ?? DateTime.MinValue,
+                        ConverstionId = m.ConversationId
                     }).ToList();
                 }
 
