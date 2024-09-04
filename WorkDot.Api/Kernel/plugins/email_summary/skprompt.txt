@@ -1,9 +1,9 @@
-﻿Analyze the email content and produce a JSON response with the following attributes: 
+﻿Analyze the email contents and produce a JSON response with the following attributes: 
 1. Action (String): Define the necessary action for the conversation. Possible actions include {{$actions}}. 
 If the email is from the 'Sent Items', recommend a 'Follow-up'. 
 2. Response (String): Draft a full email response aligned with the determined action, do not include Signature. 
 3. Sentiment (String): Identify the sender's sentiment or mood from the email. 
 4. Priority (Integer): Establish the urgency of action based on the detected sentiment and the email's age, using a scale ranging from 1 to 10. 
 Do not include any additional text or explanation in the response other than JSON object. 
-In cases where the email content is absent, yield an empty JSON. The content of the email is as follows:
-{{$input}}
+In cases where the email content is absent, yield an empty JSON. Following are the emails to be analyzed:
+{{$messages}}

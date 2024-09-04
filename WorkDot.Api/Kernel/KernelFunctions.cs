@@ -1,5 +1,6 @@
 ﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
+using System.Text.Json;
 using WorkDot.Api.Models;
 using WorkDot.Api.Services;
 
@@ -16,13 +17,21 @@ namespace AiChatApi.KernelPlugins
 
         [KernelFunction("graph_call")]
         [Description("Fetches/Retrieves/Gets/Shows Emails based on the user input criteria")]
-        public async Task<List<EmailDetails>> RetrieveEmailAsync([Description("A Microsoft Graph API query string for retrieving emails based on the user input, following the format $top=[number]&$orderby=receivedDateTime desc&$filter=[filter conditions], with rules for $top, $orderby, and $filter as specified.")] string queryParmeter)
+        public async Task<List<PlanModel>> RetrieveEmailAsync([Description("A Microsoft Graph API query string for retrieving emails based on the user input, following the format $top=[number]&$orderby=receivedDateTime desc&$filter=[filter conditions], with rules for $top, $orderby, and $filter as specified.")] string queryParmeter)
         {
             using (var scope = _serviceProvider.CreateScope())
             {
                 var _graphService = scope.ServiceProvider.GetRequiredService<GraphService>();
+                var _kernel = scope.ServiceProvider.GetRequiredService<Kernel>();
                 var messages = await _graphService.GetUserEmailsWithRawQueryAsync(queryParmeter);
-                return messages;
+                var argument = new KernelArguments()
+                {
+                    ["actions"] = JsonSerializer.Serialize(new Actions()),
+                    ["messages"] = JsonSerializer.Serialize(messages)
+                };
+                var result = await _kernel.InvokeAsync<string>("plugins","email_summary", argument);
+
+                return JsonSerializer.Deserialize<List<PlanModel>>(result!)!;
             }
         }
 

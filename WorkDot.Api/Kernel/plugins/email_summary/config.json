@@ -3,7 +3,7 @@
   "description": "summarizes email to create plan (non auto function)",
   "execution_settings": {
     "default": {
-      "max_tokens": 64,
+      "max_tokens": 800,
       "temperature": 0.0,
       "top_p": 0.0,
       "presence_penalty": 0.0,

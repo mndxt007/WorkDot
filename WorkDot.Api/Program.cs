@@ -25,7 +25,7 @@ builder.Services.AddAzureOpenAIChatCompletion(builder.Configuration["AzureOpenAi
 
 var kernel = builder.Services.AddKernel();
 kernel.Plugins.AddFromType<KernelFunctions>("graph_functions");
-//kernel.Plugins.AddFromPromptDirectory(Path.Combine(Environment.CurrentDirectory, "Kernel\\Plugins"));
+kernel.Plugins.AddFromPromptDirectory(Path.Combine(Environment.CurrentDirectory, "Kernel\\Plugins"));
 kernel.Services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
 
 #pragma warning disable SKEXP0001
