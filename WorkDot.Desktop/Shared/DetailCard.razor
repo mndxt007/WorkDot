@@ -1,0 +1,17 @@
+﻿@using MudBlazor
+
+<MudPaper Class="pa-3" Elevation="5" Style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <MudText Typo="Typo.h5">@Value</MudText>
+        <MudText Typo="Typo.body1">@Title</MudText>
+    </div>
+    <MudIcon Icon="@Icon" Color="@IconColor" Style="font-size: 2rem;" />
+</MudPaper>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string Icon { get; set; } = string.Empty;
+    [Parameter] public Color IconColor { get; set; } = Color.Default;
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

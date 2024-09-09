@@ -1,0 +1,26 @@
+﻿@inherits LayoutComponentBase
+
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+<MudThemeProvider @ref="@_mudThemeProvider" Theme="@LayoutService.CurrentTheme" IsDarkMode="@LayoutService.IsDarkMode" IsDarkModeChanged="LayoutService.SetDarkMode" />
+
+<MudLayout>
+    <MudAppBar Elevation="0">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" OnClick="@ToggleDrawer" />
+        <MudIcon Icon="@Icons.Material.Filled.AllOut" Color="Color.Inherit" Size="Size.Medium" />
+        <MudText Typo="Typo.h6" Class="px-4">WorkDot</MudText>
+        <MudSpacer />
+        <MudTooltip Duration="1000" Text="@(LayoutService.DarkModeToggle == DarkLightMode.System ? "Switch to Light Theme" : LayoutService.DarkModeToggle == DarkLightMode.Dark ? "Switch to system" : "Switch to Dark Theme")">
+            <MudIconButton Icon="@(LayoutService.DarkModeToggle == DarkLightMode.System ? @Icons.Material.Filled.AutoMode : LayoutService.DarkModeToggle == DarkLightMode.Dark ? @Icons.Material.Rounded.LightMode : @Icons.Material.Outlined.DarkMode)" Color="Color.Inherit" OnClick="@LayoutService.ToggleDarkMode" />
+        </MudTooltip>
+    </MudAppBar>
+    <MudDrawer @bind-Open="@_drawerOpen" ClipMode="DrawerClipMode.Always" Anchor="Anchor.Start" Elevation="1" Variant="@DrawerVariant.Mini">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-16">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>

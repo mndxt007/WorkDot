@@ -40,6 +40,7 @@ namespace WorkDot.Api.Controllers
             _openAIPromptExecutionSettings = new()
             {
                 ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+               
             };
             _graphService = graphService;
         }

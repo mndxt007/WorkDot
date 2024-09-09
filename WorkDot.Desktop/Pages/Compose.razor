@@ -1,0 +1,100 @@
+﻿@page "/compose"
+
+<MudGrid Justify="Justify.Center">
+    <MudItem xs="12">
+        <MudCard Elevation="8">
+            <MudCardContent>
+                <MudForm @ref="form">
+                    <MudTextField @bind-Value="_customInstruction" Placeholder="Custom Instructions..." Lines="10" Variant="Variant.Outlined" FullWidth="true" Required="true" RequiredError="Custom instruction is empty!" />
+                    <MudItem Class="d-flex justify-center">
+                        <MudButton OnClick="async () => await GenerateCustomPlan()" Color="Color.Primary" Variant="Variant.Filled" Class="mt-4">
+                            @if (_loadingCustomResponse)
+                            {
+                                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Class="mr-2" />
+                                <MudText>Loading...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Generate Response</MudText>
+                            }
+                        </MudButton>
+                    </MudItem>
+                </MudForm>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<MudGrid Justify="Justify.Center" Class="my-6">
+    @if (_generatingPlan)
+    {
+        <ComposeSkeleton />
+    }
+    else
+    {
+        <MudItem xs="12">
+            <MudCard Elevation="8">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h5" Align="Align.Center">@_selectedEmail?.Subject</MudText>
+                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mud-text-muted">@_selectedEmail?.ReceivedTime.ToString("f")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+
+                @if (_generatingPlan)
+                {
+                    <MudProgressCircular Size="Size.Large" Color="Color.Primary" Class="d-flex justify-content-center my-5" />
+                }
+                else
+                {
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="4">
+                                <DetailCard Title="Action" Value="@_generatedPlan?.Action" Icon="@Icons.Material.Filled.TaskAlt" IconColor="Color.Success" />
+                            </MudItem>
+                            <MudItem xs="4">
+                                <DetailCard Title="Sentiment" Value="@_generatedPlan?.Sentiment" Icon="@Icons.Material.Filled.Favorite" IconColor="Color.Error" />
+                            </MudItem>
+                            <MudItem xs="4">
+                                <DetailCard Title="Priority" Value="@_generatedPlan?.Priority.ToString()" Icon="@Icons.Material.Filled.WarningAmber" IconColor="Color.Warning" />
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudCard Elevation="8" Class="my-6">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h5" Class="mb-6">Suggested Response</MudText>
+                                @if (!string.IsNullOrEmpty(_generatedPlan.Response))
+                                {
+                                    <pre>@_generatedPlan?.Response</pre>
+                                }
+                                <MudGrid Justify="Justify.SpaceBetween" Class="my-8">
+                                    <MudItem>
+                                        <Clipboard TextToCopy="@_generatedPlan?.Response" />
+                                    </MudItem>
+                                    <MudItem>
+                                        <MudButton OnClick="() => ReplyAll(_selectedEmail?.EntryID, _generatedPlan?.Response ?? string.Empty)" Color="Color.Primary" Variant="Variant.Filled">
+                                            Reply All
+                                        </MudButton>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <MudGrid Justify="Justify.Center" Class="mt-2">
+                            <MudItem>
+                                <MudButton Href="https://google.com" Target="_blank" Color="Color.Primary" Variant="Variant.Filled">Open in Browser</MudButton>
+                            </MudItem>
+                            <MudItem>
+                                @{
+                                    var link = "https://onesupport.crm.dynamics.com/main.aspx?appid=101acb62-8d00-eb11-a813-000d3a8b3117&pagetype=search&searchText=";
+                                }
+                                <MudButton Href="@link" Target="_blank" Color="Color.Success" Variant="Variant.Filled">Open in DfM</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                }
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
