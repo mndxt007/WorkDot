@@ -169,7 +169,7 @@ bool loadConfigFile()
 // Load existing configuration file
 {
     // Uncomment if we need to format filesystem
-    // SPIFFS.format();
+    //SPIFFS.format();
 
     // Read configuration from FS json
     M5.Log(ESP_LOG_DEBUG, "Mounting File System...");
@@ -193,7 +193,6 @@ bool loadConfigFile()
 
                 serverIP.setValue(json["serverIp"], strlen(json["serverIp"]));
                 // testNumber = json["testNumber"].as<int>();
-
                 return true;
             }
             else

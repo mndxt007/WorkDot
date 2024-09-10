@@ -5,6 +5,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using NAudio.Wave;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using WorkDot.Api.Services;
@@ -40,7 +41,7 @@ namespace WorkDot.Api.Controllers
             _openAIPromptExecutionSettings = new()
             {
                 ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
-               
+
             };
             _graphService = graphService;
         }
@@ -61,7 +62,7 @@ namespace WorkDot.Api.Controllers
                 {
                     delay = 100;
                 }
-                await ReceiveAudio(webSocket,delay);
+                await ReceiveAudio(webSocket, delay);
             }
             else
             {
@@ -70,15 +71,18 @@ namespace WorkDot.Api.Controllers
         }
 
         #region WebSocket Methods
-        
-        private async Task ReceiveAudio(WebSocket webSocket,int delay)
+
+        private async Task ReceiveAudio(WebSocket webSocket, int delay)
         {
             try
             {
+                var buffer = new byte[1024 * 4]; // Reuse buffer across loop iterations
+                using var memoryStream = new MemoryStream(); // Create memory stream once
+
                 while (!webSocket.CloseStatus.HasValue)
                 {
-                    var buffer = new byte[1024 * 4];
-                    using var memoryStream = new MemoryStream();
+                    memoryStream.SetLength(0); // Reset memory stream for new message
+
                     WebSocketReceiveResult result;
                     do
                     {
@@ -86,24 +90,14 @@ namespace WorkDot.Api.Controllers
                         memoryStream.Write(buffer, 0, result.Count);
                     } while (!result.EndOfMessage);
 
-                    var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot/wavfiles/", $"audio_{DateTime.Now.Ticks}.wav");
-                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    memoryStream.Seek(0, SeekOrigin.Begin); // Reset stream position for reading
 
-                    if (!IsWavFile(memoryStream))
-                    {
-                        var waveStream = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
-                        WaveFileWriter.CreateWaveFile(filePath, waveStream);
-                    }
-                    else
-                    {
-                        SaveFile(memoryStream, filePath);
-                    }
-
-                    var speechRecognitionResult = await ConvertSpeechToText(filePath);
+                    // Process the memory stream directly without saving to disk
+                    var speechRecognitionResult = await ConvertSpeechToText(memoryStream);
 
                     if (speechRecognitionResult != null && speechRecognitionResult.Reason == ResultReason.RecognizedSpeech)
                     {
-                        await SendRecognizedResponse(webSocket, speechRecognitionResult.Text,delay);
+                        await SendRecognizedResponse(webSocket, speechRecognitionResult.Text, delay);
                     }
                     else
                     {
@@ -135,8 +129,8 @@ namespace WorkDot.Api.Controllers
 
             _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.ToString()));
             */
-            _chatHistory.AddUserMessage(recognizedText);    
-            var response = await _chatCompletionService.GetChatMessageContentAsync(_chatHistory,_openAIPromptExecutionSettings,_kernel);
+            _chatHistory.AddUserMessage(recognizedText);
+            var response = await _chatCompletionService.GetChatMessageContentAsync(_chatHistory, _openAIPromptExecutionSettings, _kernel);
             await webSocket.SendAsync(Encoding.UTF8.GetBytes(response.Content!), WebSocketMessageType.Text, true, CancellationToken.None);
             _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.Content!));
         }
@@ -146,17 +140,17 @@ namespace WorkDot.Api.Controllers
             var textBuffer = Encoding.UTF8.GetBytes("Sorry, I couldn't recognize your speech. Please try again!");
             await webSocket.SendAsync(new ArraySegment<byte>(textBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
-        
+
         #endregion
-        
+
         #region Chat Completion Methods
 
         private IAsyncEnumerable<StreamingChatMessageContent> GetChatCompletion(string speechText)
         {
             _chatHistory.AddUserMessage(speechText);
-            return _chatCompletionService.GetStreamingChatMessageContentsAsync(_chatHistory,_openAIPromptExecutionSettings,_kernel);
+            return _chatCompletionService.GetStreamingChatMessageContentsAsync(_chatHistory, _openAIPromptExecutionSettings, _kernel);
         }
-        
+
         #endregion
 
         #region Speech Recognition Methods
@@ -183,6 +177,51 @@ namespace WorkDot.Api.Controllers
                 return default!;
             }
         }
+
+        private async Task<SpeechRecognitionResult> ConvertSpeechToText(MemoryStream memoryStream)
+        {
+            string subscriptionKey = _configuration["AzureSpeech:SubscriptionKey"]!;
+            string region = _configuration["AzureSpeech:Region"]!;
+            var speechConfig = SpeechConfig.FromSubscription(subscriptionKey, region);
+            speechConfig.SpeechRecognitionLanguage = "en-US";
+
+            MemoryStream processedStream = memoryStream;
+
+            // Process non-WAV files
+            if (!IsWavFile(memoryStream))
+            {
+                var waveStream = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
+                processedStream = new MemoryStream();
+
+                using (var waveFileWriter = new WaveFileWriter(processedStream, waveStream.WaveFormat))
+                {
+                    waveStream.CopyTo(waveFileWriter);
+                }
+                processedStream.Position = 0; // Reset position for reading
+            }
+
+            var audioInputStream = AudioInputStream.CreatePushStream();
+            var buffer = new byte[processedStream.Length];
+            await processedStream.ReadAsync(buffer, 0, buffer.Length);
+            audioInputStream.Write(buffer, buffer.Length);
+            audioInputStream.Close();
+
+            using var audioConfig = AudioConfig.FromStreamInput(audioInputStream);
+            using var speechRecognizer = new SpeechRecognizer(speechConfig, audioConfig);
+
+            try
+            {
+                var result = await speechRecognizer.RecognizeOnceAsync();
+                LogRecognitionResult(result);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString());
+                return default!;
+            }
+        }
+
         private void LogRecognitionResult(SpeechRecognitionResult result)
         {
             if (result.Reason == ResultReason.RecognizedSpeech)
@@ -209,9 +248,9 @@ namespace WorkDot.Api.Controllers
                 }
             }
         }
-       
+
         #endregion
-       
+
         #region Utility Methods
 
         private bool IsWavFile(MemoryStream memoryStream)
