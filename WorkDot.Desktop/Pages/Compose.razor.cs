@@ -4,7 +4,6 @@ using MudBlazor;
 using System.Text.Json;
 using WorkDot.Models;
 using WorkDot.Services.Common;
-using EmailMessage = WorkDot.Models.EmailMessage;
 
 namespace WorkDot.Pages
 {
@@ -31,7 +30,7 @@ namespace WorkDot.Pages
         private string? _customInstruction = string.Empty;
         private MudForm form;
         private EmailPluginModel _generatedPlan = new();
-        private EmailMessage? _selectedEmail = new();
+        private EmailContext? _selectedEmail = new();
 
         protected override async Task OnInitializedAsync()
         {
@@ -52,7 +51,7 @@ namespace WorkDot.Pages
             OutlookService._outlookApp.ActiveExplorer().SelectionChange += OnSelectionChanged;
         }
 
-        private async Task GenerateEmailPlan()
+        private async Task GenerateEmailPlan(bool preserveHistory = true)
         {
             try
             {
@@ -65,9 +64,9 @@ namespace WorkDot.Pages
                     return;
                 }
 
-                _selectedEmail.Body = GetProcessedEmailBody(_selectedEmail.Body!);
+                _selectedEmail.EmailBody = GetProcessedEmailBody(_selectedEmail.EmailBody!);
 
-                if (!string.IsNullOrEmpty(_selectedEmail.Body))
+                if (!string.IsNullOrEmpty(_selectedEmail.EmailBody))
                 {
                     _status = "Generating Plan";
                     StateHasChanged();
@@ -75,7 +74,7 @@ namespace WorkDot.Pages
                     var prompt = ConstructPlanPrompt(_selectedEmail);
                     if (!string.IsNullOrEmpty(prompt))
                     {
-                        var response = await OpenAIService.GetResponseAsync(prompt, true);
+                        var response = await OpenAIService.GetResponseAsync(prompt, preserveHistory);
                         _generatedPlan = JsonSerializer.Deserialize<EmailPluginModel>(response)!;
                     }
                 }
@@ -96,30 +95,30 @@ namespace WorkDot.Pages
             return emailBody?.Length > 8000 ? emailBody[..8000] : emailBody!;
         }
 
-        private string ConstructPlanPrompt(EmailMessage selectedEmail)
+        private string ConstructPlanPrompt(EmailContext selectedEmail)
         {
             if (selectedEmail != null && !string.IsNullOrEmpty(_composePrompt))
             {
                 if (!string.IsNullOrEmpty(_customInstruction))
                 {
-                    return string.Format(_composePrompt, selectedEmail.Body, string.Join(_customComposePrompt, _customInstruction, Environment.NewLine));
+                    return string.Format(_composePrompt, selectedEmail.EmailBody, string.Join(_customComposePrompt, _customInstruction, Environment.NewLine));
                 }
 
-                return string.Format(_composePrompt, selectedEmail.Body, string.Empty);
+                return string.Format(_composePrompt, selectedEmail.EmailBody, string.Empty);
             }
 
             return string.Empty;
         }
 
-        private EmailMessage GetEmailContext()
+        private EmailContext GetEmailContext()
         {
-            var response = OutlookService.GetSelectedEmail();
+            var response = OutlookService.GetEmailDataAsync();
             return response;
         }
 
         private void ReplyAll(string? entryID, string response)
         {
-            OutlookService.ReplyToEmail(entryID!, response);
+            OutlookService.ReplyAll(entryID!, response);
         }
 
         private async Task GenerateCustomPlan()
@@ -144,7 +143,7 @@ namespace WorkDot.Pages
 
                 try
                 {
-                    await InvokeAsync(() => GenerateEmailPlan());
+                    await InvokeAsync(() => GenerateEmailPlan(false));
                 }
                 catch (Exception ex)
                 {

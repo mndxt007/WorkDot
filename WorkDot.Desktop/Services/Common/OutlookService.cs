@@ -2,16 +2,15 @@
 using System.Runtime.InteropServices;
 using WorkDot.Models;
 using Application = Microsoft.Office.Interop.Outlook.Application;
-using Exception = System.Exception;
-using EmailMessage = WorkDot.Models.EmailMessage;
-using Microsoft.SemanticKernel;
-using System.ComponentModel;
 namespace WorkDot.Services.Common
 {
     public class OutlookService
     {
         public Application _outlookApp;
         private NameSpace _namespace;
+        Selection _selection;
+        public Explorer _explorer;
+        MailItem mailItem;
 
         public OutlookService()
         {
@@ -20,190 +19,144 @@ namespace WorkDot.Services.Common
             _namespace.Logon(null, null, false, false);
         }
 
-        public EmailMessage GetSelectedEmail()
+        public EmailContext GetEmailDataAsync()
         {
+            var emailContext = new EmailContext();
             try
             {
-                Explorer explorer = _outlookApp.ActiveExplorer();
+                _explorer = _outlookApp.ActiveExplorer();
 
-                if (explorer.Selection.Count > 0)
+                //explorer.SelectionChange += Explorer_SelectionChange;
+                _selection = _explorer.Selection;
+                if (_selection.Count > 0)
                 {
-                    object selectedItem = explorer.Selection[1];
+                    mailItem = (MailItem)_selection[1];
 
-                    if (selectedItem is MailItem mailItem)
+                }
+                if (mailItem != null)
+                {
+                    // print the subject of the email
+                    emailContext.EntryID = mailItem.EntryID;
+                    emailContext.EmailBody = mailItem.Body;
+                    emailContext.RecievedTime = mailItem.ReceivedTime;
+                    emailContext.Subject = mailItem.Subject;
+                    emailContext.UserName = mailItem.UserProperties.Session.CurrentUser.Name;
+                    emailContext.SenderEmail = mailItem.SenderName;
+                    AddressEntry currentUserAddressEntry = mailItem.UserProperties.Session.CurrentUser.AddressEntry;
+
+                    if (currentUserAddressEntry.Type == "EX")
                     {
-                        return MapToEmailMessage(mailItem);
+                        // This is an Exchange user. Use the ExchangeUser object to get the SMTP address.
+                        ExchangeUser exchangeUser = currentUserAddressEntry.GetExchangeUser();
+                        if (exchangeUser != null)
+                        {
+                            emailContext.UserEmail = exchangeUser.PrimarySmtpAddress;
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("The selected item is not an email.");
-                        return null!;
+                        // This is not an Exchange user. Just use the address.
+                        emailContext.UserEmail = currentUserAddressEntry.Address;
                     }
+
+
+                    return emailContext;
+
                 }
+
                 else
                 {
-                    Console.WriteLine("No item is currently selected.");
-                    return null!;
+                    emailContext.Error = "No email found";
+                    return emailContext;
                 }
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                return null!;
+                emailContext.Error = "No email found";
+                return emailContext;
             }
+            //return await _jsRuntime.InvokeAsync<string>("getEmailData", includeFullConversation);
+
+
         }
 
-        public List<AppointmentItem> GetAppointmentsForToday()
+        public EmailContext GetEmailDataAsync(MailItem mailItem)
         {
-            var appointments = new List<AppointmentItem>();
+            var emailContext = new EmailContext();
             try
             {
-                var calendar = _outlookApp.GetNamespace("MAPI").GetDefaultFolder(OlDefaultFolders.olFolderCalendar);
-                var items = calendar.Items;
-                items.IncludeRecurrences = true;
-                items.Sort("[Start]", Type.Missing);
 
-                foreach (AppointmentItem appt in items)
+                if (mailItem != null)
                 {
-                    if (appt.Start.Date == DateTime.Now.Date)
+                    // print the subject of the email
+                    emailContext.EntryID = mailItem.EntryID;
+                    emailContext.EmailBody = mailItem.Body;
+                    emailContext.RecievedTime = mailItem.ReceivedTime;
+                    emailContext.Subject = mailItem.Subject;
+                    emailContext.UserName = mailItem.UserProperties.Session.CurrentUser.Name;
+                    emailContext.SenderEmail = mailItem.SenderName;
+                    AddressEntry currentUserAddressEntry = mailItem.UserProperties.Session.CurrentUser.AddressEntry;
+
+                    if (currentUserAddressEntry.Type == "EX")
                     {
-                        appointments.Add(appt);
+                        // This is an Exchange user. Use the ExchangeUser object to get the SMTP address.
+                        ExchangeUser exchangeUser = currentUserAddressEntry.GetExchangeUser();
+                        if (exchangeUser != null)
+                        {
+                            emailContext.UserEmail = exchangeUser.PrimarySmtpAddress;
+                        }
                     }
+                    else
+                    {
+                        // This is not an Exchange user. Just use the address.
+                        emailContext.UserEmail = currentUserAddressEntry.Address;
+                    }
+
+
+                    return emailContext;
+
+                }
+
+                else
+                {
+                    emailContext.Error = "No email found";
+                    return emailContext;
                 }
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                Console.WriteLine($"Error retrieving today's appointments: {ex.Message}");
+                emailContext.Error = "No email found";
+                return emailContext;
             }
+            //return await _jsRuntime.InvokeAsync<string>("getEmailData", includeFullConversation);
 
-            return appointments;
+
         }
 
-        public void ReplyToEmail(string entryID, string body)
+
+        public async Task<string> GetUserAsync()
         {
-            var mailItem = _outlookApp.Session.GetItemFromID(entryID) as MailItem;
-            if (mailItem != null)
-            {
-                var replyItem = mailItem.Reply();
-                replyItem.Body = body;
-                replyItem.Display();
-            }
+            var currentUser = _outlookApp.Session.CurrentUser;
+
+            // Return the user's email
+            return currentUser.AddressEntry.Address;
         }
 
-        public List<EmailMessage> SearchEmails(string searchTerm, string folderName = "Inbox")
+        //public async Task<string> Html2TextAsync(string html, bool includeFullConversation)
+        //{
+        //    // return await _jsRuntime.InvokeAsync<string>("html2text", html, includeFullConversation);
+        //}
+
+        public void ReplyAll(string entryID, string chatGPTResponse)
         {
-            var folder = _outlookApp.Session.GetDefaultFolder(OlDefaultFolders.olFolderInbox);
-            if (folderName != "Inbox")
-            {
-                folder = folder.Folders[folderName];
-            }
+            MailItem mailItem = _outlookApp.GetNamespace("MAPI").GetItemFromID(entryID) as MailItem;
+            var reply = mailItem.ReplyAll();
 
-            var filter = $"@SQL=\"urn:schemas:httpmail:subject\" like '%{searchTerm}%' OR " +
-                         $"\"urn:schemas:httpmail:textdescription\" like '%{searchTerm}%'";
+            // Set the body of the reply
 
-            var items = folder.Items.Restrict(filter);
-            return MapToEmailMessages(items.Cast<MailItem>().ToList());
-        }
-
-        public List<EmailMessage> GetEmailsFromSender(string senderEmail, string folderName = "Inbox")
-        {
-            var folder = _outlookApp.Session.GetDefaultFolder(OlDefaultFolders.olFolderInbox);
-            if (folderName != "Inbox")
-            {
-                folder = folder.Folders[folderName];
-            }
-
-            var filter = $"@SQL=\"urn:schemas:httpmail:fromemail\" = '{senderEmail}'";
-            var items = folder.Items.Restrict(filter);
-            return MapToEmailMessages(items.Cast<MailItem>().ToList());
-        }
-
-        public void CreateDraft(string subject, string body, string toRecipients)
-        {
-            var mailItem = _outlookApp.CreateItem(OlItemType.olMailItem) as MailItem;
-            mailItem!.Subject = subject;
-            mailItem.Body = body;
-            mailItem.To = toRecipients;
-            mailItem.Save();
-        }
-
-        public void SendEmail(string subject, string body, string toRecipients)
-        {
-            var mailItem = _outlookApp.CreateItem(OlItemType.olMailItem) as MailItem;
-            mailItem!.Subject = subject;
-            mailItem.Body = body;
-            mailItem.To = toRecipients;
-            mailItem.Send();
-        }
-
-        public List<string> GetFolderNames()
-        {
-            var inbox = _outlookApp.Session.GetDefaultFolder(OlDefaultFolders.olFolderInbox);
-            return inbox.Folders.Cast<Folder>().Select(f => f.Name).ToList();
-        }
-
-        public void MoveEmailToFolder(string entryID, string folderName)
-        {
-            var mailItem = _outlookApp.Session.GetItemFromID(entryID) as MailItem;
-            var inbox = _outlookApp.Session.GetDefaultFolder(OlDefaultFolders.olFolderInbox);
-            var targetFolder = inbox.Folders[folderName];
-            mailItem?.Move(targetFolder);
-        }
-
-        public static EmailMessage MapToEmailMessage(MailItem mailItem)
-        {
-            if (mailItem == null)
-                return null!;
-
-            var email = new EmailMessage
-            {
-                EntryID = mailItem.EntryID,
-                Subject = mailItem.Subject,
-                Body = mailItem.Body,
-                ReceivedTime = mailItem.ReceivedTime,
-                SenderName = mailItem.SenderName,
-                SenderEmailAddress = mailItem.SenderEmailAddress,
-                IsRead = !mailItem.UnRead
-            };
-
-            // Map recipients
-            if (mailItem.Recipients != null)
-            {
-                foreach (Recipient recipient in mailItem.Recipients)
-                {
-                    switch (recipient.Type)
-                    {
-                        case (int)OlMailRecipientType.olTo:
-                            email.To.Add(recipient.Address);
-                            break;
-                        case (int)OlMailRecipientType.olCC:
-                            email.CC.Add(recipient.Address);
-                            break;
-                        case (int)OlMailRecipientType.olBCC:
-                            email.BCC.Add(recipient.Address);
-                            break;
-                    }
-                }
-            }
-
-            // Map attachments
-            if (mailItem.Attachments != null)
-            {
-                email.Attachments = mailItem.Attachments.Cast<Attachment>()
-                    .Select(a => new AttachmentInfo
-                    {
-                        FileName = a.FileName,
-                        Size = a.Size
-                    })
-                    .ToList();
-            }
-
-            return email;
-        }
-
-        public static List<EmailMessage> MapToEmailMessages(IEnumerable<MailItem> mailItems)
-        {
-            return mailItems.Select(MapToEmailMessage).ToList();
+            // Set the body of the reply and add the signature
+            //reply.HTMLBody = chatGPTResponse + "\n\n" + reply.Body;
+            reply.Display();
         }
 
         public void Dispose()
