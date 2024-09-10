@@ -5,7 +5,6 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using NAudio.Wave;
-using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using WorkDot.Api.Services;
@@ -22,6 +21,7 @@ namespace WorkDot.Api.Controllers
         private readonly Kernel _kernel;
         private readonly OpenAIPromptExecutionSettings _openAIPromptExecutionSettings;
         private readonly GraphService _graphService;
+        private int offset = 44;
 
         public SpeechController(
             IConfiguration configuration,
@@ -155,28 +155,6 @@ namespace WorkDot.Api.Controllers
 
         #region Speech Recognition Methods
 
-        private async Task<SpeechRecognitionResult> ConvertSpeechToText(string wavFileInput)
-        {
-            string subscriptionKey = _configuration["AzureSpeech:SubscriptionKey"]!;
-            string region = _configuration["AzureSpeech:Region"]!;
-            var speechConfig = SpeechConfig.FromSubscription(subscriptionKey, region);
-            speechConfig.SpeechRecognitionLanguage = "en-US";
-
-            using var audioConfig = AudioConfig.FromWavFileInput(wavFileInput);
-            using var speechRecognizer = new SpeechRecognizer(speechConfig, audioConfig);
-
-            try
-            {
-                var result = await speechRecognizer.RecognizeOnceAsync();
-                LogRecognitionResult(result);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.ToString());
-                return default!;
-            }
-        }
 
         private async Task<SpeechRecognitionResult> ConvertSpeechToText(MemoryStream memoryStream)
         {
@@ -185,24 +163,48 @@ namespace WorkDot.Api.Controllers
             var speechConfig = SpeechConfig.FromSubscription(subscriptionKey, region);
             speechConfig.SpeechRecognitionLanguage = "en-US";
 
-            MemoryStream processedStream = memoryStream;
+            MemoryStream processedStream;
+            //var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot", "wavfiles", $"{Guid.NewGuid()}.wav");
+            //using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
 
-            // Process non-WAV files
             if (!IsWavFile(memoryStream))
             {
+                // Handle raw audio stream
                 var waveStream = new RawSourceWaveStream(memoryStream, new WaveFormat(16000, 1));
                 processedStream = new MemoryStream();
 
-                using (var waveFileWriter = new WaveFileWriter(processedStream, waveStream.WaveFormat))
-                {
-                    waveStream.CopyTo(waveFileWriter);
-                }
-                processedStream.Position = 0; // Reset position for reading
-            }
+                // Convert raw audio to WAV format
+                var waveFileWriter = new WaveFileWriter(processedStream, waveStream.WaveFormat);
+                waveStream.CopyTo(waveFileWriter);
+                waveFileWriter.Flush(); // Ensure all data is written to the stream
 
+                processedStream.Position = 0; // Reset position before copying
+                //processedStream.CopyTo(fileStream); // Copy processedStream to fileStream
+                //processedStream.Position = 0; // Reset position for reading
+            }
+            else
+            {
+                // Handle WAV file and skip the WAV header (44 bytes)
+                using (var waveStream = new WaveFileReader(memoryStream)) // Use `using` to ensure disposal
+                {
+                    processedStream = new MemoryStream();
+                    waveStream.CopyTo(processedStream); // Copy data from waveStream to waveFileWriter
+
+                    // Save to file
+                    
+                    
+                    processedStream.Position = 0; // Reset position before copying
+                    //processedStream.CopyTo(fileStream); // Copy processedStream to fileStream
+                    //processedStream.Position = 0;
+                }
+            }
             var audioInputStream = AudioInputStream.CreatePushStream();
             var buffer = new byte[processedStream.Length];
+
+            // Read the audio data into the buffer
             await processedStream.ReadAsync(buffer, 0, buffer.Length);
+
+            // Write the buffer to the AudioInputStream
             audioInputStream.Write(buffer, buffer.Length);
             audioInputStream.Close();
 
