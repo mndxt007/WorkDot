@@ -1,0 +1,38 @@
+﻿@page "/settings"
+
+<MudGrid>
+    <MudItem Class="relative" xs="12" md="12" lg="12">
+        <MudText Typo="Typo.h3">Inspect & Troubleshoot Apps & Agents</MudText>
+        <div class="pl-1 my-4">
+            <MudText Typo="Typo.subtitle1" Class="mud-text-secondary">
+                Dive deeper into your agents' status, upgrade agents, and resolve potential issues.
+            </MudText>
+        </div>
+    </MudItem>
+    <MudItem Class="relative" xs="12" md="12" lg="12">
+        <MudExpansionPanels MultiExpansion="true">
+            <MudExpansionPanel>
+                <TitleContent>
+                    <div class="d-flex">
+                        <MudIcon Icon="@Icons.Material.Outlined.WebStories" class="mr-3"></MudIcon>
+                        <MudText Typo="Typo.h6">Instrumented Apps</MudText>
+                    </div>
+                </TitleContent>
+                <ChildContent>
+
+                </ChildContent>
+            </MudExpansionPanel>
+            <MudExpansionPanel>
+                <TitleContent>
+                    <div class="d-flex">
+                        <MudIcon Icon="@Icons.Material.Outlined.Dashboard" class="mr-3"></MudIcon>
+                        <MudText Typo="Typo.h6">Installed Agents</MudText>
+                    </div>
+                </TitleContent>
+                <ChildContent>
+
+                </ChildContent>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudItem>
+</MudGrid>

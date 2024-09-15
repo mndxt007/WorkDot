@@ -1,0 +1,32 @@
+﻿@using WorkDot.Services.Utilities
+@inject ClipboardService ClipboardService
+
+<MudButton @onclick="OnClick" Variant="Variant.Filled" Color="Color.Primary">@buttonText</MudButton>
+
+@code {
+    [Parameter]
+    public string TextToCopy { get; set; } = default!;
+
+    private const string _copyToClipboardText = "Copy";
+    private const string _copiedToClipboardText = "Copied!";
+
+    private const string _defaultClass = "btn btn-primary";
+    private const string _successClass = "btn btn-success";
+
+    private string buttonText = _copyToClipboardText;
+    private string buttonClass = _defaultClass;
+
+    private async Task OnClick()
+    {
+        await ClipboardService.CopyToClipboard(TextToCopy);
+
+        buttonText = _copiedToClipboardText;
+        buttonClass = _successClass;
+
+        StateHasChanged();
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        buttonText = _copyToClipboardText;
+        buttonClass = _defaultClass;
+    }
+}
