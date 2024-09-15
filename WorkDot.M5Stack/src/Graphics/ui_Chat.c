@@ -59,10 +59,14 @@ void ui_Chat_screen_init(void)
     lv_obj_set_style_radius(ui_Settings2, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_Settings2, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Settings2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_image_src(ui_Settings2, &ui_img_setting_png, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_Settings2, lv_color_hex(0x0CF9EB), LV_PART_MAIN | LV_STATE_PRESSED);
-    lv_obj_set_style_bg_opa(ui_Settings2, 255, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_bg_image_src(ui_Settings2, &ui_img_vector_png, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_image_recolor(ui_Settings2, lv_color_hex(0x008397), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_image_recolor_opa(ui_Settings2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_Settings2, lv_color_hex(0x0A8386), LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_border_opa(ui_Settings2, 255, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_border_width(ui_Settings2, 5, LV_PART_MAIN | LV_STATE_PRESSED);
 
     lv_obj_add_event_cb(ui_RecordSmall, ui_event_RecordSmall, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Settings2, ui_event_Settings2, LV_EVENT_ALL, NULL);
 
 }
