@@ -82,7 +82,7 @@ namespace AiChatApi.KernelPlugins
                 {
                     return new WidgetModel()
                     {
-                        Widget = WidgetType.Plan,
+                        Widget = WidgetType.ToDo,
                         Payload = tasks
                     };
                 }

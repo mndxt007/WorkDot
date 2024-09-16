@@ -32,7 +32,7 @@ namespace WorkDot.Api.Services
                 var requestInformation = new RequestInformation
                 {
                     HttpMethod = Method.GET,
-                    UrlTemplate = fullUrl
+                    UrlTemplate = fullUrl,
                 };
 
                 var response = await _graphClient.RequestAdapter.SendAsync(requestInformation, MessageCollectionResponse.CreateFromDiscriminatorValue);
