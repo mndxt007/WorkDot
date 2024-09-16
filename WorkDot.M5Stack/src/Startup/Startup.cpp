@@ -195,7 +195,7 @@ bool loadConfigFile()
             {
                 M5.Log(ESP_LOG_DEBUG, "Parsing JSON");
 
-                serverIP.setValue(json["serverIp"], strlen(json["serverIp"]));
+                serverIP.setValue(json["serverIp"], 50);
                 // testNumber = json["testNumber"].as<int>();
 
                 return true;
