@@ -23,9 +23,10 @@ namespace WorkDot.Api.Services
 
         public async Task<List<EmailDetails>> GetUserEmailsWithRawQueryAsync(string queryParms)
         {
+            //https://learn.microsoft.com/en-us/graph/api/resources/message?view=graph-rest-1.0#properties
             try
             {
-                var baseUrl = "https://graph.microsoft.com/v1.0/users/leeg@MODERNCOMMS884601.onmicrosoft.com/messages";
+                var baseUrl = "https://graph.microsoft.com/v1.0/users/leeg@M365x50769524.onmicrosoft.com/messages";
                 var fullUrl = $"{baseUrl}?{queryParms}&$select=bodyPreview,subject,toRecipients,receivedDateTime,conversationId";
 
                 var requestInformation = new RequestInformation
@@ -54,6 +55,42 @@ namespace WorkDot.Api.Services
             {
                 Console.WriteLine($"Error retrieving emails: {ex.Message}");
                 return new List<EmailDetails>();
+            }
+        }
+
+        public async Task<List<ToDoDetails>> GetUserTasksWithRawQueryAsync(string toDoList, string queryParms)
+        {
+            //https://learn.microsoft.com/en-us/graph/api/resources/todotask?view=graph-rest-1.0
+
+            try
+            {
+                var baseUrl = "https://graph.microsoft.com/v1.0/users/leeg@M365x50769524.onmicrosoft.com/todo/lists";
+                toDoList = toDoList != null ? toDoList : "tasks";
+                var fullUrl = $"{baseUrl}/{toDoList}/tasks?{queryParms}";//&$select=title,status,body,id,dueDateTime";
+                var requestInformation = new RequestInformation
+                {
+                    HttpMethod = Method.GET,
+                    UrlTemplate = fullUrl
+                };
+                var response = await _graphClient.RequestAdapter.SendAsync(requestInformation, TodoTaskCollectionResponse.CreateFromDiscriminatorValue);
+
+                if (response?.Value != null)
+                {
+                    return response.Value.Select(m => new ToDoDetails
+                    {
+                        Title = m.Title,
+                        Body = m.Body,
+                        Status = m.Status.ToString(),
+                        DueDateTime = m.DueDateTime != null ? m.DueDateTime.ToDateTime() : DateTime.MinValue,
+                        Id = m.Id
+                    }).ToList();
+                }
+                return new List<ToDoDetails>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving tasks: {ex.Message}");
+                return new List<ToDoDetails>();
             }
         }
     }

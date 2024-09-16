@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Microsoft.Graph.Models;
+using System.Text.Json.Serialization;
 
 namespace WorkDot.Api.Models
 {
@@ -11,4 +12,16 @@ namespace WorkDot.Api.Models
         [JsonPropertyName("conversationId")]
         public string ConverstionId { get; set; }
     }
+
+    public class  ToDoDetails
+    {
+        public string Title{ get; set; }
+        public ItemBody Body { get; set; }
+        public string Status { get; set; }
+        public DateTime DueDateTime { get; set; }
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+    }
+
+
 }
