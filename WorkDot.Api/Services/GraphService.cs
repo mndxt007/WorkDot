@@ -79,13 +79,14 @@ namespace WorkDot.Api.Services
                     return response.Value.Select(m => new ToDoDetails
                     {
                         Title = m.Title,
-                        Body = m.Body,
+                        //Body = m.Body,
                         Status = m.Status.ToString(),
-                        DueDateTime = m.DueDateTime != null ? m.DueDateTime.ToDateTime() : DateTime.MinValue,
+                        DueDateTime = m.DueDateTime != null ? m.DueDateTime.ToDateTime() : DateTime.MaxValue,
                         Id = m.Id
                     }).ToList();
                 }
                 return new List<ToDoDetails>();
+           
             }
             catch (Exception ex)
             {

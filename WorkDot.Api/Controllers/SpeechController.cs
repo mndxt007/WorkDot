@@ -81,7 +81,7 @@ namespace WorkDot.Api.Controllers
             {
                 var buffer = new byte[1024 * 4]; // Reuse buffer across loop iterations
                 using var memoryStream = new MemoryStream(); // Create memory stream once
-
+                _chatHistory.AddUserMessage($"Current date time is {DateTime.UtcNow.ToString("R")}");
                 while (!webSocket.CloseStatus.HasValue)
                 {
                     memoryStream.SetLength(0); // Reset memory stream for new message

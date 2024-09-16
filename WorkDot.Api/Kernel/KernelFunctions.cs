@@ -18,13 +18,13 @@ namespace AiChatApi.KernelPlugins
             _serviceProvider = serviceProvider;
         }
 
-        [KernelFunction("graph_datetime")]
-        [Description("Retrieves the current datetime in UTC used for Graph queryparamters")]
-        public DateTimeOffset GetCurrentUtcTime()
-           => DateTime.Now;
+        //[KernelFunction("graph_datetime")]
+        //[Description("Retrieves the current datetime in UTC used for Graph queryparamters")]
+        //public DateTimeOffset GetCurrentUtcTime()
+        //   => DateTime.UtcNow;
 
         [KernelFunction("graph_demails")]
-        [Description("Fetches/Retrieves/Gets/Shows Emails based on the user input criteria. Call graph_datetime before this function to get the current time.")]
+        [Description("Fetches/Retrieves/Gets/Shows Emails based on the user input criteria.")]
         public async Task<WidgetModel> RetrieveEmailAsync([Description(Prompts.EmailParamDescription)] string queryParmeter)
         {
             using (var scope = _serviceProvider.CreateScope())
@@ -62,7 +62,7 @@ namespace AiChatApi.KernelPlugins
         }
 
         [KernelFunction("graph_dtodo")]
-        [Description("Fetches/Retrieves/Gets/Shows To-Do tasks based on the user input criteria. Call graph_datetime before this function to get the current time.")]
+        [Description("Fetches/Retrieves/Gets/Shows To-Do tasks based on the user input criteria.")]
         public async Task<WidgetModel> RetrieveToDoAsync([Description(Prompts.ToDoListParamDescription)] string toDoList, [Description(Prompts.ToDoParamDescription)] string queryParams)
         {
             using (var scope = _serviceProvider.CreateScope())

@@ -16,7 +16,7 @@ namespace WorkDot.Api.Models
     public class  ToDoDetails
     {
         public string Title{ get; set; }
-        public ItemBody Body { get; set; }
+        //public ItemBody Body { get; set; }
         public string Status { get; set; }
         public DateTime DueDateTime { get; set; }
         [JsonPropertyName("id")]
