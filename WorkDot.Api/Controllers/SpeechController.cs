@@ -23,6 +23,7 @@ namespace WorkDot.Api.Controllers
         private readonly GraphService _graphService;
         private int offset = 44;
         private AudioStreamFormat format;
+        private StringBuilder stringBuilder = new();
 
         public SpeechController(
             IConfiguration configuration,
@@ -120,26 +121,42 @@ namespace WorkDot.Api.Controllers
         {
             var userTextBuffer = Encoding.UTF8.GetBytes($"\nYou: {recognizedText}\nAI: ");
             await webSocket.SendAsync(new ArraySegment<byte>(userTextBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
-            /* Commenting for Debug
+            // Commenting for Debug
           var completion = GetChatCompletion(recognizedText);
-          var response = new StringBuilder();
-          await foreach (var item in completion)
+          stringBuilder.Remove(0,stringBuilder.Length);
+           await foreach (var item in completion)
           {
+                if(item.Content == null)
+                {
+                    continue;
+                }
               await webSocket.SendAsync(item.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
-              response.Append(item.Content);
+              stringBuilder.Append(item.Content);
               await Task.Delay(delay);
           }
 
-          _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.ToString()));
-          */
+          if(stringBuilder.Length <= 0)
+            {
+                //assuming tool call result is present
+                await webSocket.SendAsync(Encoding.UTF8.GetBytes(_chatHistory.LastOrDefault()?.Content!), WebSocketMessageType.Text, true, CancellationToken.None); 
+                //_chatHistory.Remove(_chatHistory.LastOrDefault()!);
+            }
+          else
+            {
+                _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, stringBuilder.ToString()));
+            }
+            
+          //*/
+            /*
             _chatHistory.AddUserMessage(recognizedText);
             var response = await _chatCompletionService.GetChatMessageContentAsync(_chatHistory, _openAIPromptExecutionSettings, _kernel);
             await webSocket.SendAsync(Encoding.UTF8.GetBytes(response.Content!), WebSocketMessageType.Text, true, CancellationToken.None);
+            */
 #pragma warning disable SKEXP0001
-            if (!(response.Items.Where(item => item is FunctionResultContent).Any()))
-            {
-                _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.Content!));
-            }
+            //if (!(response.Items.Where(item => item is FunctionResultContent).Any()))
+            //{
+            //    _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.Content!));
+            //}
            
         }
 

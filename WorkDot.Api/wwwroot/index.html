@@ -100,10 +100,12 @@
         socket.onopen = () => console.log('WebSocket connection established.');
         socket.onerror = (error) => console.log('WebSocket error:', error);
         socket.onmessage = (event) => {
-            const recognizedText = event.data;
-            allRecognizedText += recognizedText + ' ';
-            recognizedTextElement.textContent = allRecognizedText.trim();
-            recognizedTextElement.scrollTop = recognizedTextElement.scrollHeight;
+    const recognizedText = event.data;
+            if (recognizedText) {
+                allRecognizedText += recognizedText;
+                recognizedTextElement.textContent = allRecognizedText.trim();
+                recognizedTextElement.scrollTop = recognizedTextElement.scrollHeight;
+            }
         };
 
         async function getMediaStream() {
