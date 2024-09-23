@@ -5,6 +5,7 @@ namespace WorkDot.Services.Models
     public class EmailItem
     {
         public string BodyPreview { get; set; } = default!;
+        public string From { get; set; } = default!;
         public string Subject { get; set; } = default!;
         public List<string> Recipients { get; set; } = default!;
         public DateTime ReceivedDateTime { get; set; }

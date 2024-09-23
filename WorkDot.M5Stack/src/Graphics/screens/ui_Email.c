@@ -3,7 +3,7 @@
 // LVGL version: 9.1.0
 // Project name: SquareLine_Project
 
-#include "ui.h"
+#include "../ui.h"
 
 void ui_Email_screen_init(void)
 {
@@ -23,12 +23,13 @@ void ui_Email_screen_init(void)
     lv_obj_set_style_border_opa(ui_Panel2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Subject = lv_label_create(ui_Panel2);
-    lv_obj_set_width(ui_Subject, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_width(ui_Subject, 310);
     lv_obj_set_height(ui_Subject, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_Subject, 0);
     lv_obj_set_y(ui_Subject, -10);
     lv_obj_set_align(ui_Subject, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Subject, "Email Subject");
+    lv_label_set_long_mode(ui_Subject, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(ui_Subject, "This is a big Email subject. This is a big Email subject.");
     lv_obj_set_style_text_color(ui_Subject, lv_color_hex(0x757CF2), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_Subject, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_Subject, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -38,7 +39,7 @@ void ui_Email_screen_init(void)
     lv_obj_set_height(ui_DateTime, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_DateTime, 0);
     lv_obj_set_y(ui_DateTime, 10);
-    lv_obj_set_align(ui_DateTime, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_align(ui_DateTime, LV_ALIGN_BOTTOM_LEFT);
     lv_label_set_text(ui_DateTime, "DateTime");
     lv_obj_set_style_text_color(ui_DateTime, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_DateTime, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -46,9 +47,8 @@ void ui_Email_screen_init(void)
     ui_MessageLabel = lv_label_create(ui_Email);
     lv_obj_set_width(ui_MessageLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_MessageLabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_MessageLabel, -121);
-    lv_obj_set_y(ui_MessageLabel, 56);
-    lv_obj_set_align(ui_MessageLabel, LV_ALIGN_TOP_MID);
+    lv_obj_set_x(ui_MessageLabel, 15);
+    lv_obj_set_y(ui_MessageLabel, 55);
     lv_label_set_long_mode(ui_MessageLabel, LV_LABEL_LONG_SCROLL);
     lv_label_set_text(ui_MessageLabel, "Message");
     lv_obj_set_style_text_color(ui_MessageLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -74,6 +74,9 @@ void ui_Email_screen_init(void)
     lv_obj_set_align(ui_EmailMessage, LV_ALIGN_CENTER);
     lv_label_set_text(ui_EmailMessage,
                       "Thanks Manoj, I see the claims in the decrypted Jwt token but for some reason they are not mapped to the Principal, so this always fails.  \n\nAny idea why?\n\nYour response will be appreciated!\n\nFrom: Stephen Halter  ");
+    lv_obj_add_flag(ui_EmailMessage, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_remove_flag(ui_EmailMessage, LV_OBJ_FLAG_SCROLL_ELASTIC);      /// Flags
+    lv_obj_set_scrollbar_mode(ui_EmailMessage, LV_SCROLLBAR_MODE_ON);
     lv_obj_set_style_text_color(ui_EmailMessage, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_EmailMessage, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui_EmailMessage, LV_TEXT_ALIGN_AUTO, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -240,10 +243,28 @@ void ui_Email_screen_init(void)
     lv_obj_set_y(ui_SuggestedResponse, 2);
     lv_obj_set_align(ui_SuggestedResponse, LV_ALIGN_CENTER);
     lv_label_set_text(ui_SuggestedResponse,
-                      "Thanks Manoj, I see the claims in the decrypted Jwt token but for some reason they are not mapped to the Principal, so this always fails.  \n\nAny idea why?\n\nYour response will be appreciated!\n\nFrom: Stephen Halter  ");
+                      "Thanks Manoj, I see the claims in the decrypted Jwt token but for some reason they are not mapped to the Principal, so this always fails.  \n\nAny idea why?\nThanks Manoj, I see the claims in the decrypted Jwt token but for some reason they are not mapped to the Principal, so this always fails.  \n\nAny idea why?\nThanks Manoj, I see the claims in the decrypted Jwt token but for some reason they are not mapped to the Principal, so this always fails.  \n\nAny idea why?\n\nYour response will be appreciated!");
+    lv_obj_add_flag(ui_SuggestedResponse, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_remove_flag(ui_SuggestedResponse, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_CHAIN);      /// Flags
+    lv_obj_set_scrollbar_mode(ui_SuggestedResponse, LV_SCROLLBAR_MODE_ON);
+    lv_obj_set_scroll_dir(ui_SuggestedResponse, LV_DIR_VER);
     lv_obj_set_style_text_color(ui_SuggestedResponse, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_SuggestedResponse, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui_SuggestedResponse, LV_TEXT_ALIGN_AUTO, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_SuggestedResponse, &lv_font_montserrat_10, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_ImgButton1 = lv_imagebutton_create(ui_Email);
+    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_RELEASED, NULL, &ui_img_chat_png, NULL);
+    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_PRESSED, NULL, &ui_img_chat_pressed_png, NULL);
+    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_DISABLED, NULL, &ui__temporary_image, NULL);
+    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_CHECKED_PRESSED, NULL, &ui__temporary_image, NULL);
+    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_CHECKED_RELEASED, NULL, &ui__temporary_image, NULL);
+    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_CHECKED_DISABLED, NULL, &ui__temporary_image, NULL);
+    lv_obj_set_width(ui_ImgButton1, 30);
+    lv_obj_set_height(ui_ImgButton1, 30);
+    lv_obj_set_x(ui_ImgButton1, 263);
+    lv_obj_set_y(ui_ImgButton1, 32);
+
+    lv_obj_add_event_cb(ui_Email, ui_event_Email, LV_EVENT_ALL, NULL);
 
 }

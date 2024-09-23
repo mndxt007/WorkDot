@@ -27,7 +27,7 @@ namespace WorkDot.Api.Controllers
         private int offset = 44;
         private AudioStreamFormat format;
         private StringBuilder stringBuilder = new();
-        private bool isArduino=false;
+        private bool isArduino = false;
 
         public SpeechController(
             IConfiguration configuration,
@@ -127,39 +127,40 @@ namespace WorkDot.Api.Controllers
             var userTextBuffer = Encoding.UTF8.GetBytes($"\nYou: {recognizedText}\nAI: ");
             await webSocket.SendAsync(new ArraySegment<byte>(userTextBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
             // Commenting for Debug
-          var completion = GetChatCompletion(recognizedText);
-          stringBuilder.Remove(0,stringBuilder.Length);
-            var screenChange = false;
+            var completion = GetChatCompletion(recognizedText);
+            stringBuilder.Remove(0, stringBuilder.Length);
             await foreach (var item in completion)
-          {
-                if(item.Content == null)
+            {
+                if (item.Content == null)
                 {
                     continue;
                 }
 
-              await webSocket.SendAsync(item.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
-              stringBuilder.Append(item.Content);
-              await Task.Delay(delay);
-          }
+                await webSocket.SendAsync(item.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
+                stringBuilder.Append(item.Content);
+                await Task.Delay(delay);
+            }
 
-          if(stringBuilder.Length <= 0)
+            if (stringBuilder.Length <= 0)
             {
                 //assuming tool call result is present
-                if(isArduino)
+                var toolcall = _chatHistory.LastOrDefault()?.Content!;
+                if (isArduino)
                 {
-                    var WidgetResult = JsonSerializer.Deserialize<WidgetModel>(_chatHistory.LastOrDefault()?.Content!);
-                    await webSocket.SendAsync(Encoding.UTF8.GetBytes(WidgetResult!.Widget.ToString()), WebSocketMessageType.Binary, true, CancellationToken.None);
+                    var widgetResult = JsonSerializer.Deserialize<WidgetModel>(toolcall);
+                    int widgetValue = Convert.ToInt32(widgetResult!.Widget);
+                    await webSocket.SendAsync(new byte[] { Convert.ToByte(widgetValue) }, WebSocketMessageType.Binary, true, CancellationToken.None);
 
                 }
-                await webSocket.SendAsync(Encoding.UTF8.GetBytes(_chatHistory.LastOrDefault()?.Content!), WebSocketMessageType.Text, true, CancellationToken.None); 
-                //_chatHistory.Remove(_chatHistory.LastOrDefault()!);
+                await webSocket.SendAsync(Encoding.UTF8.GetBytes(toolcall), WebSocketMessageType.Text, true, CancellationToken.None);
+                //_chatHistory.Remove(_chatHistory.LastOrDefault()!); // can't remove since LLM will complain.
             }
-          else
+            else
             {
                 _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, stringBuilder.ToString()));
             }
-            
-          //*/
+
+            //*/
             /*
             _chatHistory.AddUserMessage(recognizedText);
             var response = await _chatCompletionService.GetChatMessageContentAsync(_chatHistory, _openAIPromptExecutionSettings, _kernel);
@@ -170,7 +171,7 @@ namespace WorkDot.Api.Controllers
             //{
             //    _chatHistory.Add(new ChatMessageContent(AuthorRole.Assistant, response.Content!));
             //}
-           
+
         }
 
         private async Task SendUnrecognizedResponse(WebSocket webSocket)
@@ -225,7 +226,7 @@ namespace WorkDot.Api.Controllers
                     processedStream = new MemoryStream();
                     waveStream.CopyTo(processedStream); // Copy data from waveStream to waveFileWriter
                     processedStream.Position = 0; // Reset position before copying
-                    
+
                 }
             }
             // Save to file

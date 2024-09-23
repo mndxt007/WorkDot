@@ -42,10 +42,10 @@ extern lv_obj_t * ui_Record;
 void ui_event_Image12(lv_event_t * e);
 extern lv_obj_t * ui_Image12;
 extern lv_obj_t * ui_Spinner1;
+void ui_event_Settings3(lv_event_t * e);
+extern lv_obj_t * ui_Settings3;
 extern lv_obj_t * ui_Wifi;
 extern lv_obj_t * ui_ServerConn;
-void ui_event_Settings(lv_event_t * e);
-extern lv_obj_t * ui_Settings;
 // SCREEN: ui_Chat
 void ui_Chat_screen_init(void);
 extern lv_obj_t * ui_Chat;
@@ -65,6 +65,7 @@ void ui_event_BackButton(lv_event_t * e);
 extern lv_obj_t * ui_BackButton;
 // SCREEN: ui_Email
 void ui_Email_screen_init(void);
+void ui_event_Email(lv_event_t * e);
 extern lv_obj_t * ui_Email;
 extern lv_obj_t * ui_Panel2;
 extern lv_obj_t * ui_Subject;
@@ -87,6 +88,7 @@ extern lv_obj_t * ui_PriorityImage;
 extern lv_obj_t * ui_LabelSuggested;
 extern lv_obj_t * ui_Panel4;
 extern lv_obj_t * ui_SuggestedResponse;
+extern lv_obj_t * ui_ImgButton1;
 extern lv_obj_t * ui____initial_actions0;
 
 
@@ -97,16 +99,18 @@ LV_IMG_DECLARE(ui_img_ellipse_5_png);    // assets/Ellipse 5.png
 LV_IMG_DECLARE(ui_img_ellipse_6_png);    // assets/Ellipse 6.png
 LV_IMG_DECLARE(ui_img_workdot_png);    // assets/WorkDot.png
 LV_IMG_DECLARE(ui_img_microphone_10307974_1_png);    // assets/microphone_10307974 1.png
-LV_IMG_DECLARE(ui_img_2128174856);    // assets/Button1 (1).png
-LV_IMG_DECLARE(ui_img_button1_png);    // assets/Button1.png
-LV_IMG_DECLARE(ui_img_1682388829);    // assets/Button2 (1).png
-LV_IMG_DECLARE(ui_img_button2_png);    // assets/Button2.png
 LV_IMG_DECLARE(ui_img_vector_png);    // assets/Vector.png
+LV_IMG_DECLARE(ui_img_button1_1_png);    // assets/Button1_1.png
+LV_IMG_DECLARE(ui_img_button1_png);    // assets/Button1.png
+LV_IMG_DECLARE(ui_img_button2_1_png);    // assets/Button2_1.png
+LV_IMG_DECLARE(ui_img_button2_png);    // assets/Button2.png
 LV_IMG_DECLARE(ui_img_record_small_png);    // assets/Record_Small.png
 LV_IMG_DECLARE(ui_img_172201545);    // assets/backward-solid 1.png
 LV_IMG_DECLARE(ui_img_actionimage_png);    // assets/ActionImage.png
 LV_IMG_DECLARE(ui_img_sentimentimage_png);    // assets/SentimentImage.png
 LV_IMG_DECLARE(ui_img_priorityimage_png);    // assets/PriorityImage.png
+LV_IMG_DECLARE(ui_img_chat_png);    // assets/Chat.png
+LV_IMG_DECLARE(ui_img_chat_pressed_png);    // assets/Chat_Pressed.png
 
 
 

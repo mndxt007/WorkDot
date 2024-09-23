@@ -3,7 +3,7 @@
 // LVGL version: 9.1.0
 // Project name: SquareLine_Project
 
-#include "ui.h"
+#include "../ui.h"
 
 void ui_Setup_screen_init(void)
 {

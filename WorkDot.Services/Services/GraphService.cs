@@ -23,7 +23,7 @@ namespace WorkDot.Services.Services
             try
             {
                 var baseUrl = "https://graph.microsoft.com/v1.0/users/leeg@M365x50769524.onmicrosoft.com/messages";
-                var fullUrl = $"{baseUrl}?{queryParms}&$select=bodyPreview,subject,toRecipients,receivedDateTime,conversationId";
+                var fullUrl = $"{baseUrl}?{queryParms}&$select=bodyPreview,subject,toRecipients,receivedDateTime,conversationId,from";
 
                 var requestInformation = new RequestInformation
                 {
@@ -41,8 +41,9 @@ namespace WorkDot.Services.Services
                         Subject = m.Subject,
                         Recipients = m.ToRecipients?.Select(r => r.EmailAddress?.Address).ToList(),
                         ReceivedDateTime = m.ReceivedDateTime?.DateTime ?? DateTime.MinValue,
-                        ConverstionId = m.ConversationId
-                    }).ToList();
+                        ConverstionId = m.ConversationId,
+                        From = m.From?.EmailAddress?.Address
+                    }).OrderBy(x => x.ReceivedDateTime).DistinctBy(x => x.ConverstionId).ToList();
                 }
 
                 return new List<EmailItem>();

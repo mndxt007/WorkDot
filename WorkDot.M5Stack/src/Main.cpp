@@ -7,6 +7,7 @@
 #include <Graphics/ui.h>
 #include <lvgl.h>
 #include "esp_task_wdt.h"
+#include <ArduinoJson.h>
 
 // defines
 //================
@@ -32,7 +33,10 @@ extern JsonDocument json;
 bool recording = false;
 SemaphoreHandle_t xMutex;
 QueueHandle_t payloadQueue;
-int activeScreen = 0; //Chat
+int activeScreen = 9; // Chat
+// Widget items
+JsonDocument doc;
+int widgetIndex = 0;
 
 // Methods Declaration
 //===================
@@ -47,9 +51,11 @@ void startRecording(lv_event_t *e);
 void stopRecording(lv_event_t *e);
 void startConfig(lv_event_t *e);
 void my_log_cb(lv_log_level_t level, const char *buf);
-void update_textarea_async(void *param);
+void update_chat_async(void *param);
+void update_email_async(void *param);
 void start_config_task(void *param);
 void restart(lv_event_t *e);
+void onSwipeEvent(lv_event_t *e);
 
 // Arduino Methods
 //==================
@@ -111,6 +117,7 @@ void setup(void)
     lv_obj_add_event_cb((lv_obj_t *)ui_RecordSmall, stopRecording, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb((lv_obj_t *)ui_Setup, startConfig, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_add_event_cb((lv_obj_t *)ui_BackButton, restart, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb((lv_obj_t *)ui_Email, onSwipeEvent, LV_EVENT_GESTURE, NULL);
 
     // Queue
     // ======================
@@ -239,25 +246,45 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         lv_imagebutton_set_state(ui_ServerConn, LV_IMAGEBUTTON_STATE_CHECKED_PRESSED);
         break;
     case WStype_TEXT:
-        // M5.Log(ESP_LOG_INFO,"Response: %s\n", payload);
+        M5.Log(ESP_LOG_INFO, "Recieved Data of length %d", length);
         if (payload != nullptr)
         {
-            // M5.Log(ESP_LOG_INFO, "Incoming data start");
-
-            if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE)
+            switch (activeScreen)
             {
-                xQueueSend(payloadQueue, (void *)payload, portMAX_DELAY);
-                xSemaphoreGive(xMutex);
-            }
+            case 9:
+                // M5.Log(ESP_LOG_INFO, "Incoming data start");
 
-            lv_async_call(update_textarea_async, NULL);
-            // M5.Log(ESP_LOG_INFO, "Incoming data end");
+                if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE)
+                {
+                    xQueueSend(payloadQueue, (void *)payload, portMAX_DELAY);
+                    xSemaphoreGive(xMutex);
+                }
+
+                lv_async_call(update_chat_async, NULL);
+                // M5.Log(ESP_LOG_INFO, "Incoming data end");
+
+                break;
+            case 1:
+                lv_scr_load(ui_Email);
+                M5.Log(ESP_LOG_INFO, "Parsing plan data");
+                DeserializationError error = deserializeJson(json, payload);
+                if (!error)
+                {
+                    lv_async_call(update_email_async, NULL);
+                }
+                else
+                {
+                    M5.Log(ESP_LOG_ERROR, "Failed to deserialize JSON: %s", error.c_str());
+                }
+                break;
+            }
         }
         break;
     case WStype_BIN:
+        M5.Log(ESP_LOG_INFO, "Recieved binary message %d", payload[0]);
         if (payload != nullptr && length == 1 && payload[0] >= 0 && payload[0] <= 9)
         {
-            int activeScreen = payload[0];
+            activeScreen = payload[0];
             M5.Log(ESP_LOG_INFO, "Active screen set to %d", activeScreen);
         }
         break;
@@ -293,8 +320,9 @@ void my_log_cb(lv_log_level_t level, const char *buf)
     M5.Log(ESP_LOG_INFO, buf);
 }
 
-void update_textarea_async(void *param)
+void update_chat_async(void *param)
 {
+
     char payload[1024];
     if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE)
     {
@@ -303,6 +331,91 @@ void update_textarea_async(void *param)
             lv_textarea_add_text(ui_TextArea1, payload);
         }
         xSemaphoreGive(xMutex);
+    }
+}
+
+void update_email_async(void *param)
+{
+    // serializeJsonPretty(json, Serial);
+    if (widgetIndex < json["Data"].size())
+    {
+        auto data = json["Data"][widgetIndex];
+        auto message = data["Message"];
+        M5.Log(ESP_LOG_INFO, "Email Subject - %s", message["Subject"].as<const char*>());
+        lv_label_set_text(ui_Subject, message["Subject"]);
+        lv_label_set_text(ui_DateTime, message["ReceivedDateTime"]);
+        lv_label_set_text(ui_EmailMessage, message["BodyPreview"]);
+        lv_label_set_text(ui_MessageLabel, message["From"]);
+        lv_label_set_text(ui_Subject, message["Subject"]);
+        lv_label_set_text(ui_SentimentValue, data["Sentiment"]);
+        lv_label_set_text(ui_PriorityValue, data["Priority"]);
+        lv_label_set_text(ui_ActionValue, data["Action"]);
+        lv_label_set_text(ui_SuggestedResponse, data["Response"]);
+    }
+    else
+    {
+        M5.Log(ESP_LOG_ERROR, "widgetIndex out of bounds");
+    }
+}
+
+void onSwipeEvent(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_GESTURE)
+    {
+        lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
+        if (dir == LV_DIR_LEFT)
+        {
+            M5.Log(ESP_LOG_INFO, "Right Swipe Detected. Widget Index : %d, Data length is %d", widgetIndex, json["Data"].size());
+            quickVibrate();
+            // Handle the right swipe event
+            if (widgetIndex + 1 < json["Data"].size())
+            {
+                widgetIndex++;
+                auto data = json["Data"][widgetIndex];
+                auto message = data["Message"];
+                M5.Log(ESP_LOG_INFO, "Email Subject - %s", message["Subject"].as<const char*>());
+                lv_label_set_text(ui_Subject, message["Subject"]);
+                lv_label_set_text(ui_DateTime, message["ReceivedDateTime"]);
+                lv_label_set_text(ui_EmailMessage, message["BodyPreview"]);
+                lv_label_set_text(ui_MessageLabel, message["From"]);
+                lv_label_set_text(ui_Subject, message["Subject"]);
+                lv_label_set_text(ui_SentimentValue, data["Sentiment"]);
+                lv_label_set_text(ui_PriorityValue, data["Priority"]);
+                lv_label_set_text(ui_ActionValue, data["Action"]);
+                lv_label_set_text(ui_SuggestedResponse, data["Response"]);
+            }
+            else
+            {
+                quickVibrate();
+            }
+        }
+        if (dir == LV_DIR_RIGHT)
+        {
+            M5.Log(ESP_LOG_INFO, "Left Swipe Detected. Widget Index : %d, Data length is %d", widgetIndex, json["Data"].size());
+            quickVibrate();
+            // Handle the right swipe event
+            if (widgetIndex - 1 >= 0)
+            {
+                widgetIndex--;
+                auto data = json["Data"][widgetIndex];
+                auto message = data["Message"];
+                 M5.Log(ESP_LOG_INFO, "Email Subject - %s", message["Subject"].as<const char*>());
+                lv_label_set_text(ui_Subject, message["Subject"]);
+                lv_label_set_text(ui_DateTime, message["ReceivedDateTime"]);
+                lv_label_set_text(ui_EmailMessage, message["BodyPreview"]);
+                lv_label_set_text(ui_MessageLabel, message["From"]);
+                lv_label_set_text(ui_Subject, message["Subject"]);
+                lv_label_set_text(ui_SentimentValue, data["Sentiment"]);
+                lv_label_set_text(ui_PriorityValue, data["Priority"]);
+                lv_label_set_text(ui_ActionValue, data["Action"]);
+                lv_label_set_text(ui_SuggestedResponse, data["Response"]);
+            }
+            else
+            {
+                quickVibrate();
+            }
+        }
     }
 }
 
