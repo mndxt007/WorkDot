@@ -76,7 +76,6 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
         <PackageReference Include="MudBlazor" Version="7.6.0" />
-		<PackageReference Include="Microsoft.SemanticKernel" Version="1.17.2" />
 		<PackageReference Include="Plugin.Maui.Audio" Version="3.0.0" />
     </ItemGroup>
 

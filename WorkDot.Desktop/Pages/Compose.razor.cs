@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
+using Microsoft.SemanticKernel;
 using MudBlazor;
 using System.Text.Json;
 using WorkDot.Models;
 using WorkDot.Services.Common;
+using WorkDot.Services.Models;
 
 namespace WorkDot.Pages
 {
@@ -16,7 +18,7 @@ namespace WorkDot.Pages
         public required IConfiguration Configuration { get; set; }
 
         [Inject]
-        public required ChatCompletionService OpenAIService { get; set; }
+        public required Kernel Kernel { get; set; }
 
         [Inject]
         public required OutlookService OutlookService { get; set; }
@@ -24,8 +26,7 @@ namespace WorkDot.Pages
         private bool _loadingCustomResponse = false;
         private bool _generatingPlan = false;
         private bool _isProcessing = false;
-        private string? _composePrompt;
-        private string? _customComposePrompt;
+
         private string? _status { get; set; } = string.Empty;
         private string? _customInstruction = string.Empty;
         private MudForm form;
@@ -34,8 +35,6 @@ namespace WorkDot.Pages
 
         protected override async Task OnInitializedAsync()
         {
-            _composePrompt = Configuration.GetValue<string>("Prompts:Compose")!;
-            _customComposePrompt = Configuration.GetValue<string>("Prompts:CustomCompose")!;
             _selectedEmail = GetEmailContext();
 
             try
@@ -51,7 +50,7 @@ namespace WorkDot.Pages
             OutlookService._outlookApp.ActiveExplorer().SelectionChange += OnSelectionChanged;
         }
 
-        private async Task GenerateEmailPlan(bool preserveHistory = true)
+        private async Task GenerateEmailPlan(bool preserveHistory = false)
         {
             try
             {
@@ -74,8 +73,8 @@ namespace WorkDot.Pages
                     var prompt = ConstructPlanPrompt(_selectedEmail);
                     if (!string.IsNullOrEmpty(prompt))
                     {
-                        var response = await OpenAIService.GetResponseAsync(prompt, preserveHistory);
-                        _generatedPlan = JsonSerializer.Deserialize<EmailPluginModel>(response)!;
+                        var response = await Kernel.InvokePromptAsync(prompt);
+                        _generatedPlan = JsonSerializer.Deserialize<EmailPluginModel>(response.ToString())!;
                     }
                 }
             }
@@ -97,14 +96,14 @@ namespace WorkDot.Pages
 
         private string ConstructPlanPrompt(EmailContext selectedEmail)
         {
-            if (selectedEmail != null && !string.IsNullOrEmpty(_composePrompt))
+            if (selectedEmail != null)
             {
                 if (!string.IsNullOrEmpty(_customInstruction))
                 {
-                    return string.Format(_composePrompt, selectedEmail.EmailBody, string.Join(_customComposePrompt, _customInstruction, Environment.NewLine));
+                    return string.Format(Prompts.CustomComposePrompt, selectedEmail.EmailBody, _customInstruction);
                 }
 
-                return string.Format(_composePrompt, selectedEmail.EmailBody, string.Empty);
+                return string.Format(Prompts.ComposePrompt, selectedEmail.EmailBody);
             }
 
             return string.Empty;

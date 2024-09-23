@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="3.1.0" />
     <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="3.1.0" />
     <PackageReference Include="Microsoft.Identity.Web.GraphServiceClient" Version="3.1.0" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.13.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.20.0" />
     <PackageReference Include="Microsoft.Graph" Version="5.40.0" />
   </ItemGroup>
 
