@@ -35,7 +35,7 @@ extern lv_obj_t * ui_logo;
 extern lv_obj_t * ui_dotp;
 extern lv_obj_t * ui_dotg;
 extern lv_obj_t * ui_dotb;
-extern lv_obj_t * ui_text;
+extern lv_obj_t * ui_Image1;
 // SCREEN: ui_Record
 void ui_Record_screen_init(void);
 extern lv_obj_t * ui_Record;
@@ -88,16 +88,30 @@ extern lv_obj_t * ui_PriorityImage;
 extern lv_obj_t * ui_LabelSuggested;
 extern lv_obj_t * ui_Panel4;
 extern lv_obj_t * ui_SuggestedResponse;
-extern lv_obj_t * ui_ImgButton1;
+extern lv_obj_t * ui_Back2Chat1;
+// SCREEN: ui_Todo
+void ui_Todo_screen_init(void);
+extern lv_obj_t * ui_Todo;
+extern lv_obj_t * ui_TodoTitle;
+extern lv_obj_t * ui_Title;
+extern lv_obj_t * ui_Panel5;
+extern lv_obj_t * ui_Status;
+extern lv_obj_t * ui_Panel6;
+extern lv_obj_t * ui_DueDateImage;
+extern lv_obj_t * ui_Label3;
+extern lv_obj_t * ui_DueDate;
+extern lv_obj_t * ui_Details;
+extern lv_obj_t * ui_Image4;
+extern lv_obj_t * ui_Label2;
+extern lv_obj_t * ui_Back2Chat2;
 extern lv_obj_t * ui____initial_actions0;
 
 
-LV_IMG_DECLARE(ui__temporary_image);
 LV_IMG_DECLARE(ui_img_flexibility_12969792_1_png);    // assets/flexibility_12969792 1.png
 LV_IMG_DECLARE(ui_img_ellipse_4_png);    // assets/Ellipse 4.png
 LV_IMG_DECLARE(ui_img_ellipse_5_png);    // assets/Ellipse 5.png
 LV_IMG_DECLARE(ui_img_ellipse_6_png);    // assets/Ellipse 6.png
-LV_IMG_DECLARE(ui_img_workdot_png);    // assets/WorkDot.png
+LV_IMG_DECLARE(ui_img_workdot1_png);    // assets/WorkDot1.png
 LV_IMG_DECLARE(ui_img_microphone_10307974_1_png);    // assets/microphone_10307974 1.png
 LV_IMG_DECLARE(ui_img_vector_png);    // assets/Vector.png
 LV_IMG_DECLARE(ui_img_button1_1_png);    // assets/Button1_1.png
@@ -110,7 +124,8 @@ LV_IMG_DECLARE(ui_img_actionimage_png);    // assets/ActionImage.png
 LV_IMG_DECLARE(ui_img_sentimentimage_png);    // assets/SentimentImage.png
 LV_IMG_DECLARE(ui_img_priorityimage_png);    // assets/PriorityImage.png
 LV_IMG_DECLARE(ui_img_chat_png);    // assets/Chat.png
-LV_IMG_DECLARE(ui_img_chat_pressed_png);    // assets/Chat_Pressed.png
+LV_IMG_DECLARE(ui_img_1785934031);    // assets/clock-regular 1.png
+LV_IMG_DECLARE(ui_img_2086523439);    // assets/eye-solid 1.png
 
 
 

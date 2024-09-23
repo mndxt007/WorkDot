@@ -19,7 +19,7 @@ lv_obj_t * ui_logo;
 lv_obj_t * ui_dotp;
 lv_obj_t * ui_dotg;
 lv_obj_t * ui_dotb;
-lv_obj_t * ui_text;
+lv_obj_t * ui_Image1;
 
 
 // SCREEN: ui_Record
@@ -80,15 +80,35 @@ lv_obj_t * ui_PriorityImage;
 lv_obj_t * ui_LabelSuggested;
 lv_obj_t * ui_Panel4;
 lv_obj_t * ui_SuggestedResponse;
-lv_obj_t * ui_ImgButton1;
+lv_obj_t * ui_Back2Chat1;
+
+
+// SCREEN: ui_Todo
+void ui_Todo_screen_init(void);
+lv_obj_t * ui_Todo;
+lv_obj_t * ui_TodoTitle;
+lv_obj_t * ui_Title;
+lv_obj_t * ui_Panel5;
+lv_obj_t * ui_Status;
+lv_obj_t * ui_Panel6;
+lv_obj_t * ui_DueDateImage;
+lv_obj_t * ui_Label3;
+lv_obj_t * ui_DueDate;
+lv_obj_t * ui_Details;
+lv_obj_t * ui_Image4;
+lv_obj_t * ui_Label2;
+lv_obj_t * ui_Back2Chat2;
 lv_obj_t * ui____initial_actions0;
 const lv_image_dsc_t * ui_imgset_1288938689[1] = {&ui_img_172201545};
 const lv_image_dsc_t * ui_imgset_button[2] = {&ui_img_button1_png, &ui_img_button2_png};
+const lv_image_dsc_t * ui_imgset_button_[1] = {&ui_img_button1_1_png};
+const lv_image_dsc_t * ui_imgset_button2_[1] = {&ui_img_button2_1_png};
+const lv_image_dsc_t * ui_imgset_1650242871[1] = {&ui_img_1785934031};
 const lv_image_dsc_t * ui_imgset_ellipse_[3] = {&ui_img_ellipse_4_png, &ui_img_ellipse_5_png, &ui_img_ellipse_6_png};
+const lv_image_dsc_t * ui_imgset_684165551[1] = {&ui_img_2086523439};
 const lv_image_dsc_t * ui_imgset_flexibility_2969792_[1] = {&ui_img_flexibility_12969792_1_png};
 const lv_image_dsc_t * ui_imgset_microphone_0307974_[1] = {&ui_img_microphone_10307974_1_png};
-const lv_image_dsc_t * ui_imgset_button2_[1] = {&ui_img_button2_1_png};
-const lv_image_dsc_t * ui_imgset_button_[1] = {&ui_img_button1_1_png};
+const lv_image_dsc_t * ui_imgset_workdot[1] = {&ui_img_workdot1_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -205,6 +225,7 @@ void ui_init(void)
     ui_Chat_screen_init();
     ui_Setup_screen_init();
     ui_Email_screen_init();
+    ui_Todo_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Splash);
 }

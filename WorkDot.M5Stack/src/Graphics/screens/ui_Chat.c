@@ -9,6 +9,8 @@ void ui_Chat_screen_init(void)
 {
     ui_Chat = lv_obj_create(NULL);
     lv_obj_remove_flag(ui_Chat, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Chat, lv_color_hex(0x414041), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Chat, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_TextArea1 = lv_textarea_create(ui_Chat);
     lv_obj_set_width(ui_TextArea1, 259);
@@ -17,7 +19,13 @@ void ui_Chat_screen_init(void)
     lv_obj_set_y(ui_TextArea1, 6);
     lv_textarea_set_max_length(ui_TextArea1, 5000);
     lv_textarea_set_placeholder_text(ui_TextArea1, "You : What is Hackathon?");
-    lv_obj_remove_flag(ui_TextArea1, LV_OBJ_FLAG_CLICK_FOCUSABLE);      /// Flags
+    lv_obj_remove_flag(ui_TextArea1, LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_SCROLL_ELASTIC);      /// Flags
+    lv_obj_set_style_text_color(ui_TextArea1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_TextArea1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_TextArea1, lv_color_hex(0x292C29), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_TextArea1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_TextArea1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_TextArea1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 
 

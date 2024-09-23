@@ -14,8 +14,10 @@
 #define SERVER_IP "192.168.29.145"
 #define QUEUE_LENGTH 10
 #define ITEM_SIZE sizeof(char[1024])
-#define EMAIL_PLUGIN 2
+// plugins
 #define CHAT_PLUGIN 1
+#define EMAIL_PLUGIN 2
+#define TODO_PLUGIN 3
 
 // statics
 //================
@@ -39,6 +41,7 @@ int activeScreen = 1; // Chat
 // Widget items
 JsonDocument doc;
 int widgetIndex = 0;
+DeserializationError error;
 
 // Methods Declaration
 //===================
@@ -55,9 +58,11 @@ void startConfig(lv_event_t *e);
 void my_log_cb(lv_log_level_t level, const char *buf);
 void update_chat_async(void *param);
 void update_email_async(void *param);
+void update_todo_async(void *param);
 void start_config_task(void *param);
 void restart(lv_event_t *e);
 void onSwipeEvent(lv_event_t *e);
+void showChat(lv_event_t *e);
 
 // Arduino Methods
 //==================
@@ -120,7 +125,9 @@ void setup(void)
     lv_obj_add_event_cb((lv_obj_t *)ui_Setup, startConfig, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_add_event_cb((lv_obj_t *)ui_BackButton, restart, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb((lv_obj_t *)ui_Email, onSwipeEvent, LV_EVENT_GESTURE, NULL);
-
+    lv_obj_add_event_cb((lv_obj_t *)ui_Todo, onSwipeEvent, LV_EVENT_GESTURE, NULL);
+     lv_obj_add_event_cb((lv_obj_t *)ui_Back2Chat1, showChat, LV_EVENT_RELEASED, NULL);
+     lv_obj_add_event_cb((lv_obj_t *)ui_Back2Chat2, showChat, LV_EVENT_RELEASED, NULL);
     // Queue
     // ======================
     payloadQueue = xQueueCreate(QUEUE_LENGTH, ITEM_SIZE);
@@ -267,12 +274,27 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
 
                 break;
             case EMAIL_PLUGIN:
-                lv_scr_load(ui_Email);
-                M5.Log(ESP_LOG_INFO, "Parsing plan data");
-                DeserializationError error = deserializeJson(json, payload);
+                lv_scr_load_anim(ui_Email, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, false);
+                M5.Log(ESP_LOG_INFO, "Email Plugin - Parsing plan data");
+                error = deserializeJson(json, payload);
                 if (!error)
                 {
+                    widgetIndex = 0;
                     lv_async_call(update_email_async, NULL);
+                }
+                else
+                {
+                    M5.Log(ESP_LOG_ERROR, "Failed to deserialize JSON: %s", error.c_str());
+                }
+                break;
+            case TODO_PLUGIN:
+                lv_scr_load_anim(ui_Todo, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, false);
+                M5.Log(ESP_LOG_INFO, "Todo Plugin - Parsing Todo data");
+                error = deserializeJson(json, payload);
+                if (!error)
+                {
+                    widgetIndex = 0;
+                    lv_async_call(update_todo_async, NULL);
                 }
                 else
                 {
@@ -343,7 +365,7 @@ void update_email_async(void *param)
     {
         auto data = json["Data"][widgetIndex];
         auto message = data["Message"];
-        M5.Log(ESP_LOG_INFO, "Email Subject - %s", message["Subject"].as<const char*>());
+        M5.Log(ESP_LOG_INFO, "Email Subject - %s", message["Subject"].as<const char *>());
         lv_label_set_text(ui_Subject, message["Subject"]);
         lv_label_set_text(ui_DateTime, message["ReceivedDateTime"]);
         lv_label_set_text(ui_EmailMessage, message["BodyPreview"]);
@@ -353,6 +375,23 @@ void update_email_async(void *param)
         lv_label_set_text(ui_PriorityValue, data["Priority"]);
         lv_label_set_text(ui_ActionValue, data["Action"]);
         lv_label_set_text(ui_SuggestedResponse, data["Response"]);
+    }
+    else
+    {
+        M5.Log(ESP_LOG_ERROR, "widgetIndex out of bounds");
+    }
+}
+
+void update_todo_async(void *param)
+{
+    // serializeJsonPretty(json, Serial);
+    if (widgetIndex < json["Data"].size())
+    {
+        auto data = json["Data"][widgetIndex];
+        M5.Log(ESP_LOG_INFO, "To do Title - %s", data["Title"].as<const char *>());
+        lv_label_set_text(ui_Title, data["Title"]);
+        lv_label_set_text(ui_Status, data["Status"]);
+        lv_label_set_text(ui_DueDate, data["DueDateTime"]);
     }
     else
     {
@@ -374,7 +413,17 @@ void onSwipeEvent(lv_event_t *e)
             if (widgetIndex + 1 < json["Data"].size())
             {
                 widgetIndex++;
-                update_email_async(NULL);
+                switch (activeScreen)
+                {
+                case EMAIL_PLUGIN:
+                    update_email_async(NULL);
+                    break;
+                case TODO_PLUGIN:
+                    update_todo_async(NULL);
+                    break;
+                default:
+                    break;
+                }
             }
             else
             {
@@ -389,7 +438,17 @@ void onSwipeEvent(lv_event_t *e)
             if (widgetIndex - 1 >= 0)
             {
                 widgetIndex--;
-                update_email_async(NULL);
+                switch (activeScreen)
+                {
+                case EMAIL_PLUGIN:
+                    update_email_async(NULL);
+                    break;
+                case TODO_PLUGIN:
+                    update_todo_async(NULL);
+                    break;
+                default:
+                    break;
+                }
             }
             else
             {
@@ -397,6 +456,13 @@ void onSwipeEvent(lv_event_t *e)
             }
         }
     }
+}
+
+void showChat(lv_event_t *e)
+{
+    activeScreen = CHAT_PLUGIN;
+    quickVibrate();
+    lv_scr_load_anim(ui_Chat, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, false);
 }
 
 /// for ESP-IDF

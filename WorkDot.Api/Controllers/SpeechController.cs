@@ -151,7 +151,7 @@ namespace WorkDot.Api.Controllers
                     switch(widgetResult!.Widget)
                     {
                         case WidgetType.Plan:
-                            await webSocket.SendAsync(Encoding.UTF8.GetBytes("Showing Email Widgets"), WebSocketMessageType.Text, true, CancellationToken.None);
+                            await webSocket.SendAsync(Encoding.UTF8.GetBytes("Showing Email Widget"), WebSocketMessageType.Text, true, CancellationToken.None);
                             break;
                         case WidgetType.Todo:
                             await webSocket.SendAsync(Encoding.UTF8.GetBytes("Showing Todo Widget"), WebSocketMessageType.Text, true, CancellationToken.None);

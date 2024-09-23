@@ -9,6 +9,8 @@ void ui_Record_screen_init(void)
 {
     ui_Record = lv_obj_create(NULL);
     lv_obj_remove_flag(ui_Record, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Record, lv_color_hex(0x414041), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Record, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Image12 = lv_image_create(ui_Record);
     lv_image_set_src(ui_Image12, &ui_img_microphone_10307974_1_png);

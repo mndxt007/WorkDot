@@ -17,6 +17,7 @@ void ui_Email_screen_init(void)
     lv_obj_set_height(ui_Panel2, 50);
     lv_obj_set_align(ui_Panel2, LV_ALIGN_TOP_MID);
     lv_obj_remove_flag(ui_Panel2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_radius(ui_Panel2, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_Panel2, lv_color_hex(0x2C2C2C), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Panel2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_color(ui_Panel2, lv_color_hex(0x2C2C2C), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -253,17 +254,26 @@ void ui_Email_screen_init(void)
     lv_obj_set_style_text_align(ui_SuggestedResponse, LV_TEXT_ALIGN_AUTO, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_SuggestedResponse, &lv_font_montserrat_10, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_ImgButton1 = lv_imagebutton_create(ui_Email);
-    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_RELEASED, NULL, &ui_img_chat_png, NULL);
-    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_PRESSED, NULL, &ui_img_chat_pressed_png, NULL);
-    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_DISABLED, NULL, &ui__temporary_image, NULL);
-    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_CHECKED_PRESSED, NULL, &ui__temporary_image, NULL);
-    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_CHECKED_RELEASED, NULL, &ui__temporary_image, NULL);
-    lv_imagebutton_set_src(ui_ImgButton1, LV_IMAGEBUTTON_STATE_CHECKED_DISABLED, NULL, &ui__temporary_image, NULL);
-    lv_obj_set_width(ui_ImgButton1, 30);
-    lv_obj_set_height(ui_ImgButton1, 30);
-    lv_obj_set_x(ui_ImgButton1, 263);
-    lv_obj_set_y(ui_ImgButton1, 32);
+    ui_Back2Chat1 = lv_button_create(ui_Email);
+    lv_obj_set_width(ui_Back2Chat1, 40);
+    lv_obj_set_height(ui_Back2Chat1, 40);
+    lv_obj_set_x(ui_Back2Chat1, 115);
+    lv_obj_set_y(ui_Back2Chat1, -75);
+    lv_obj_set_align(ui_Back2Chat1, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Back2Chat1, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_remove_flag(ui_Back2Chat1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_radius(ui_Back2Chat1, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Back2Chat1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Back2Chat1, 100, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_image_src(ui_Back2Chat1, &ui_img_chat_png, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_Back2Chat1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(ui_Back2Chat1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_Back2Chat1, lv_color_hex(0x62E6BD), LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_opa(ui_Back2Chat1, 255, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_width(ui_Back2Chat1, 4, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_spread(ui_Back2Chat1, 4, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_offset_x(ui_Back2Chat1, 0, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_offset_y(ui_Back2Chat1, 0, LV_PART_MAIN | LV_STATE_PRESSED);
 
     lv_obj_add_event_cb(ui_Email, ui_event_Email, LV_EVENT_ALL, NULL);
 

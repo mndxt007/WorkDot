@@ -3,6 +3,7 @@ SET(SOURCES screens/ui_Splash.c
     screens/ui_Chat.c
     screens/ui_Setup.c
     screens/ui_Email.c
+    screens/ui_Todo.c
     ui.c
     components/ui_comp_hook.c
     ui_helpers.c
@@ -11,7 +12,7 @@ SET(SOURCES screens/ui_Splash.c
     images/ui_img_ellipse_4_png.c
     images/ui_img_ellipse_5_png.c
     images/ui_img_ellipse_6_png.c
-    images/ui_img_workdot_png.c
+    images/ui_img_workdot1_png.c
     images/ui_img_microphone_10307974_1_png.c
     images/ui_img_vector_png.c
     images/ui_img_button1_1_png.c
@@ -24,7 +25,7 @@ SET(SOURCES screens/ui_Splash.c
     images/ui_img_sentimentimage_png.c
     images/ui_img_priorityimage_png.c
     images/ui_img_chat_png.c
-    images/ui_img_chat_pressed_png.c
-    ui_temporary_image.c)
+    images/ui_img_1785934031.c
+    images/ui_img_2086523439.c)
 
 add_library(ui ${SOURCES})
