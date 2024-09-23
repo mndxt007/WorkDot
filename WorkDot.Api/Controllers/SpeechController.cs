@@ -148,6 +148,16 @@ namespace WorkDot.Api.Controllers
                 if (isArduino)
                 {
                     var widgetResult = JsonSerializer.Deserialize<WidgetModel>(toolcall);
+                    switch(widgetResult!.Widget)
+                    {
+                        case WidgetType.Plan:
+                            await webSocket.SendAsync(Encoding.UTF8.GetBytes("Showing Email Widgets"), WebSocketMessageType.Text, true, CancellationToken.None);
+                            break;
+                        case WidgetType.Todo:
+                            await webSocket.SendAsync(Encoding.UTF8.GetBytes("Showing Todo Widget"), WebSocketMessageType.Text, true, CancellationToken.None);
+                            break;
+                    }
+                    await Task.Delay(500);
                     int widgetValue = Convert.ToInt32(widgetResult!.Widget);
                     await webSocket.SendAsync(new byte[] { Convert.ToByte(widgetValue) }, WebSocketMessageType.Binary, true, CancellationToken.None);
 
