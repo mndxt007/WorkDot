@@ -2,10 +2,10 @@ SET(SOURCES ui_Splash.c
     ui_Record.c
     ui_Chat.c
     ui_Setup.c
+    ui_Email.c
     ui.c
     ui_comp_hook.c
     ui_helpers.c
-    ui_events.c
     ui_img_flexibility_12969792_1_png.c
     ui_img_ellipse_4_png.c
     ui_img_ellipse_5_png.c
@@ -18,6 +18,10 @@ SET(SOURCES ui_Splash.c
     ui_img_button2_png.c
     ui_img_vector_png.c
     ui_img_record_small_png.c
-    ui_img_172201545.c)
+    ui_img_172201545.c
+    ui_img_actionimage_png.c
+    ui_img_sentimentimage_png.c
+    ui_img_priorityimage_png.c
+    ui_temporary_image.c)
 
 add_library(ui ${SOURCES})
