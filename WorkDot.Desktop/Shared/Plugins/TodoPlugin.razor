@@ -1,0 +1,33 @@
+﻿@using WorkDot.Services.Models
+@using MudBlazor
+
+<h3>Todo Plugin</h3>
+
+<MudGrid>
+    @foreach (var todo in TodoItems)
+    {
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h6">@todo.Title</MudText>
+                    <MudText Typo="Typo.caption">Due: @todo.DueDateTime.ToString("g")</MudText>
+                </MudCardHeader>
+
+                <MudCardContent>
+                    <MudText Typo="Typo.body2">
+                        Status: @todo.Status
+                    </MudText>
+                </MudCardContent>
+
+                <MudCardActions>
+                    <MudButton Color="Color.Primary" Variant="Variant.Text">Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    [Parameter]
+    public List<TodoItem> TodoItems { get; set; } = new List<TodoItem>();
+}

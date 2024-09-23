@@ -16,11 +16,6 @@ namespace WorkDot.Services.Functions
             _serviceProvider = serviceProvider;
         }
 
-        //[KernelFunction("graph_datetime")]
-        //[Description("Retrieves the current datetime in UTC used for Graph queryparamters")]
-        //public DateTimeOffset GetCurrentUtcTime()
-        //   => DateTime.UtcNow;
-
         [KernelFunction("graph_demails")]
         [Description("Fetches/Retrieves/Gets/Shows Emails based on the user input criteria.")]
         public async Task<WidgetModel> RetrieveEmailAsync([Description(Prompts.EmailParamDescription)] string queryParmeter)
@@ -35,7 +30,7 @@ namespace WorkDot.Services.Functions
                     return new WidgetModel()
                     {
                         Widget = WidgetType.Plan,
-                        Payload = null
+                        Data = null
                     };
                 }
                 else
@@ -53,7 +48,7 @@ namespace WorkDot.Services.Functions
                     return new WidgetModel()
                     {
                         Widget = WidgetType.Plan,
-                        Payload = plans
+                        Data = plans
                     };
                 }
             }
@@ -73,21 +68,20 @@ namespace WorkDot.Services.Functions
                     return new WidgetModel()
                     {
                         Widget = WidgetType.Plan,
-                        Payload = null
+                        Data = null
                     };
                 }
                 else
                 {
                     return new WidgetModel()
                     {
-                        Widget = WidgetType.ToDo,
-                        Payload = tasks
+                        Widget = WidgetType.Todo,
+                        Data = tasks
                     };
                 }
             }
         }
-
-#pragma warning disable SKEXP0001
+      
         public class FunctionCallsFilter() : IAutoFunctionInvocationFilter
         {
             public async Task OnAutoFunctionInvocationAsync(AutoFunctionInvocationContext context, Func<AutoFunctionInvocationContext, Task> next)
@@ -100,7 +94,5 @@ namespace WorkDot.Services.Functions
                 }
             }
         }
-
-
     }
 }

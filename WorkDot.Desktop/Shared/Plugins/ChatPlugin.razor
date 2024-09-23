@@ -1,0 +1,26 @@
+﻿@using static WorkDot.Pages.Assistant
+
+@if (Conversation.Count > 0)
+{
+    <MudPaper Elevation="0" Class="pa-4 overflow-y-auto my-6 chatpane">
+        @foreach (var item in Conversation)
+        {
+            <MudPaper Elevation="0" Class="mb-3 pa-3 d-inline-flex">
+                <MudStack Row="true">
+                    <MudAvatar Size="Size.Medium" Variant="Variant.Filled">
+                        <MudIcon Icon="@(string.Equals(item.Source, "U") ? Icons.Material.Filled.Person3 : Icons.Material.Filled.AutoAwesome)" />
+                    </MudAvatar>
+                    <MudStack Justify="Justify.Center" Spacing="0">
+                        <pre>@item.Text</pre>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+            <br />
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter]
+    public List<ChatMessageModel> Conversation { get; set; } = new();
+}

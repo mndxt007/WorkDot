@@ -1,0 +1,93 @@
+﻿@using Microsoft.CognitiveServices.Speech
+@using Microsoft.CognitiveServices.Speech.Audio
+@using System.Text.Json
+@using WorkDot.Services;
+@using WorkDot.Services.Common
+@using WorkDot.Services.Models
+@using WorkDot.Shared.Plugins
+@inject SpeechConfig config
+@inject ChatCompletionService chatService
+@inject ISnackbar Snackbar
+
+<div class="d-flex flex-column align-center mt-5">
+    <button class="record-button @((isListening) ? "active" : "")"
+            @onclick="StartRecording"
+            disabled="@isListening">
+        <MudIcon Icon="@Icons.Material.Filled.MicNone" Title="Mic" Size="Size.Large" />
+    </button>
+    @if (currentWidget == WidgetType.Plan)
+    {
+        <PlanPlugin PlanModels="widgetData as List<PlanModel>" />
+    }
+    else if (currentWidget == WidgetType.Todo)
+    {
+        <TodoPlugin TodoItems="widgetData as List<TodoItem>" />
+    }
+    else if (currentWidget == WidgetType.Chat)
+    {
+        <ChatPlugin Conversation="conversation" />
+    }
+    else
+    {
+        <MudText>Oops...Something went wrong..</MudText>
+    }
+</div>
+
+@code {
+    private List<ChatMessageModel> conversation = new();
+    private bool isListening { get; set; } = false;
+    private WidgetType currentWidget = WidgetType.Chat;
+    private object widgetData = default!;
+
+    public async void StartRecording()
+    {
+        if (await Permissions.RequestAsync<Permissions.Microphone>() != PermissionStatus.Granted)
+        {
+            Snackbar.Add("Microphone Permission Denied", Severity.Error);
+        }
+        else
+        {
+            isListening = true;
+            StateHasChanged();
+
+            using var audioConfig = AudioConfig.FromDefaultMicrophoneInput();
+            using var speechRecognizer = new SpeechRecognizer(config, audioConfig);
+
+            try
+            {
+                var result = await speechRecognizer.RecognizeOnceAsync();
+                conversation.Add(new ChatMessageModel() { Source = "U", Text = result.Text });
+                var response = await chatService.GetResponseAsync(result.Text);
+                ProcessResponse(response);
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+
+            isListening = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ProcessResponse(string response)
+    {
+        try
+        {
+            var widgetModel = JsonSerializer.Deserialize<WidgetModel>(response);
+
+            if (widgetModel != null && widgetModel?.Widget != null && widgetModel.Data != null)
+            {
+                if (Enum.TryParse(widgetModel.Widget.ToString(), out currentWidget))
+                {
+                    widgetData = widgetModel.Data;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            currentWidget = WidgetType.Chat;
+            conversation.Add(new ChatMessageModel() { Source = "W", Text = response });
+        }
+    }
+}

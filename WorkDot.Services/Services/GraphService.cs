@@ -2,7 +2,7 @@
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions;
-using WorkDot.Api.Models;
+using WorkDot.Services.Models;
 
 namespace WorkDot.Services.Services
 {
@@ -17,7 +17,7 @@ namespace WorkDot.Services.Services
             _logger = logger;
         }
 
-        public async Task<List<EmailDetails>> GetUserEmailsWithRawQueryAsync(string queryParms)
+        public async Task<List<EmailItem>> GetUserEmailsWithRawQueryAsync(string queryParms)
         {
             //https://learn.microsoft.com/en-us/graph/api/resources/message?view=graph-rest-1.0#properties
             try
@@ -35,7 +35,7 @@ namespace WorkDot.Services.Services
 
                 if (response?.Value != null)
                 {
-                    return response.Value.Select(m => new EmailDetails
+                    return response.Value.Select(m => new EmailItem
                     {
                         BodyPreview = m.BodyPreview,
                         Subject = m.Subject,
@@ -45,16 +45,16 @@ namespace WorkDot.Services.Services
                     }).ToList();
                 }
 
-                return new List<EmailDetails>();
+                return new List<EmailItem>();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error retrieving emails: {ex.Message}");
-                return new List<EmailDetails>();
+                return new List<EmailItem>();
             }
         }
 
-        public async Task<List<ToDoDetails>> GetUserTasksWithRawQueryAsync(string toDoList, string queryParms)
+        public async Task<List<TodoItem>> GetUserTasksWithRawQueryAsync(string toDoList, string queryParms)
         {
             //https://learn.microsoft.com/en-us/graph/api/resources/todotask?view=graph-rest-1.0
 
@@ -72,7 +72,7 @@ namespace WorkDot.Services.Services
 
                 if (response?.Value != null)
                 {
-                    return response.Value.Select(m => new ToDoDetails
+                    return response.Value.Select(m => new TodoItem
                     {
                         Title = m.Title,
                         //Body = m.Body,
@@ -81,13 +81,13 @@ namespace WorkDot.Services.Services
                         Id = m.Id
                     }).ToList();
                 }
-                return new List<ToDoDetails>();
+                return new List<TodoItem>();
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error retrieving tasks: {ex.Message}");
-                return new List<ToDoDetails>();
+                return new List<TodoItem>();
             }
         }
     }

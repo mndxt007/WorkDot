@@ -3,13 +3,14 @@
     public class WidgetModel
     {
         public WidgetType Widget { get; set; }
-        public object Payload { get; set; }
+        public object Data { get; set; }
     }
 
     public enum WidgetType
     {
+        Chat,
         Plan,
-        ToDo,
+        Todo,
         Teams,
         Notifications,
     }

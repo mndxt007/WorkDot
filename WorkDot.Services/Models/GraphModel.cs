@@ -1,27 +1,23 @@
-﻿using Microsoft.Graph.Models;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
-namespace WorkDot.Api.Models
+namespace WorkDot.Services.Models
 {
-    public class EmailDetails
+    public class EmailItem
     {
-        public string BodyPreview { get; set; }
-        public string Subject { get; set; }
-        public List<string> Recipients { get; set; }
+        public string BodyPreview { get; set; } = default!;
+        public string Subject { get; set; } = default!;
+        public List<string> Recipients { get; set; } = default!;
         public DateTime ReceivedDateTime { get; set; }
         [JsonPropertyName("conversationId")]
-        public string ConverstionId { get; set; }
+        public string ConverstionId { get; set; } = default!;
     }
 
-    public class  ToDoDetails
+    public class TodoItem
     {
-        public string Title{ get; set; }
-        //public ItemBody Body { get; set; }
-        public string Status { get; set; }
+        public string Title { get; set; } = default!;
+        public string Status { get; set; } = default!;
         public DateTime DueDateTime { get; set; }
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string Id { get; set; } = default!;
     }
-
-
 }
