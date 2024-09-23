@@ -14,6 +14,8 @@
 #define SERVER_IP "192.168.29.145"
 #define QUEUE_LENGTH 10
 #define ITEM_SIZE sizeof(char[1024])
+#define EMAIL_PLUGIN 2
+#define CHAT_PLUGIN 1
 
 // statics
 //================
@@ -33,7 +35,7 @@ extern JsonDocument json;
 bool recording = false;
 SemaphoreHandle_t xMutex;
 QueueHandle_t payloadQueue;
-int activeScreen = 9; // Chat
+int activeScreen = 1; // Chat
 // Widget items
 JsonDocument doc;
 int widgetIndex = 0;
@@ -251,7 +253,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         {
             switch (activeScreen)
             {
-            case 9:
+            case CHAT_PLUGIN:
                 // M5.Log(ESP_LOG_INFO, "Incoming data start");
 
                 if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE)
@@ -264,7 +266,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
                 // M5.Log(ESP_LOG_INFO, "Incoming data end");
 
                 break;
-            case 1:
+            case EMAIL_PLUGIN:
                 lv_scr_load(ui_Email);
                 M5.Log(ESP_LOG_INFO, "Parsing plan data");
                 DeserializationError error = deserializeJson(json, payload);
@@ -372,18 +374,7 @@ void onSwipeEvent(lv_event_t *e)
             if (widgetIndex + 1 < json["Data"].size())
             {
                 widgetIndex++;
-                auto data = json["Data"][widgetIndex];
-                auto message = data["Message"];
-                M5.Log(ESP_LOG_INFO, "Email Subject - %s", message["Subject"].as<const char*>());
-                lv_label_set_text(ui_Subject, message["Subject"]);
-                lv_label_set_text(ui_DateTime, message["ReceivedDateTime"]);
-                lv_label_set_text(ui_EmailMessage, message["BodyPreview"]);
-                lv_label_set_text(ui_MessageLabel, message["From"]);
-                lv_label_set_text(ui_Subject, message["Subject"]);
-                lv_label_set_text(ui_SentimentValue, data["Sentiment"]);
-                lv_label_set_text(ui_PriorityValue, data["Priority"]);
-                lv_label_set_text(ui_ActionValue, data["Action"]);
-                lv_label_set_text(ui_SuggestedResponse, data["Response"]);
+                update_email_async(NULL);
             }
             else
             {
@@ -398,18 +389,7 @@ void onSwipeEvent(lv_event_t *e)
             if (widgetIndex - 1 >= 0)
             {
                 widgetIndex--;
-                auto data = json["Data"][widgetIndex];
-                auto message = data["Message"];
-                 M5.Log(ESP_LOG_INFO, "Email Subject - %s", message["Subject"].as<const char*>());
-                lv_label_set_text(ui_Subject, message["Subject"]);
-                lv_label_set_text(ui_DateTime, message["ReceivedDateTime"]);
-                lv_label_set_text(ui_EmailMessage, message["BodyPreview"]);
-                lv_label_set_text(ui_MessageLabel, message["From"]);
-                lv_label_set_text(ui_Subject, message["Subject"]);
-                lv_label_set_text(ui_SentimentValue, data["Sentiment"]);
-                lv_label_set_text(ui_PriorityValue, data["Priority"]);
-                lv_label_set_text(ui_ActionValue, data["Action"]);
-                lv_label_set_text(ui_SuggestedResponse, data["Response"]);
+                update_email_async(NULL);
             }
             else
             {
