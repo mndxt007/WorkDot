@@ -1,7 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using WorkDot.Api.Models;
 
-namespace WorkDot.Api.Models
+namespace WorkDot.Services.Models
 {
     public class PlanModel
     {
@@ -17,8 +17,8 @@ namespace WorkDot.Api.Models
 
     public class Actions
     {
-       
-        public string? Category1 { get; set; }   
+
+        public string? Category1 { get; set; }
         public string? Category2 { get; set; }
         public string? Category3 { get; set; }
         public string? Category4 { get; set; }

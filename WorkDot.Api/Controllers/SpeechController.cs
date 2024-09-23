@@ -7,7 +7,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using NAudio.Wave;
 using System.Net.WebSockets;
 using System.Text;
-using WorkDot.Api.Services;
+using WorkDot.Services.Services;
 
 namespace WorkDot.Api.Controllers
 {

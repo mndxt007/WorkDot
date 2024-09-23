@@ -20,4 +20,8 @@
     <Folder Include="wwwroot\wavfiles\" />
   </ItemGroup>
 	
+  <ItemGroup>
+    <ProjectReference Include="..\WorkDot.Services\WorkDot.Services.csproj" />
+  </ItemGroup>
+	
 </Project>

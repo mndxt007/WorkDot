@@ -1,14 +1,10 @@
-﻿using Microsoft.Graph.Models;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Identity.Web;
-using EmailParameters = Microsoft.Graph.Users.Item.Messages.MessagesRequestBuilder.MessagesRequestBuilderGetQueryParameters;
-using System.Text.Json;
+using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions;
-using System.Web;
 using WorkDot.Api.Models;
 
-namespace WorkDot.Api.Services
+namespace WorkDot.Services.Services
 {
     public partial class GraphService
     {
@@ -86,7 +82,7 @@ namespace WorkDot.Api.Services
                     }).ToList();
                 }
                 return new List<ToDoDetails>();
-           
+
             }
             catch (Exception ex)
             {

@@ -1,9 +1,9 @@
-﻿namespace WorkDot.Api.Models
+﻿namespace WorkDot.Services.Models
 {
     public class WidgetModel
     {
         public WidgetType Widget { get; set; }
-        public object Payload { get; set; } 
+        public object Payload { get; set; }
     }
 
     public enum WidgetType

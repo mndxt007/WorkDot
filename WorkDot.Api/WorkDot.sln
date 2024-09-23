@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkDot.Api", "WorkDot.Api.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkDot.Desktop", "..\WorkDot.Desktop\WorkDot.Desktop.csproj", "{3DD15284-76B2-422A-AA7D-1C3B11F86C20}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkDot.Services", "..\WorkDot.Services\WorkDot.Services.csproj", "{619D48EE-CF8D-4578-94FD-1B72EBFF9B73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{3DD15284-76B2-422A-AA7D-1C3B11F86C20}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3DD15284-76B2-422A-AA7D-1C3B11F86C20}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3DD15284-76B2-422A-AA7D-1C3B11F86C20}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{619D48EE-CF8D-4578-94FD-1B72EBFF9B73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{619D48EE-CF8D-4578-94FD-1B72EBFF9B73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{619D48EE-CF8D-4578-94FD-1B72EBFF9B73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{619D48EE-CF8D-4578-94FD-1B72EBFF9B73}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

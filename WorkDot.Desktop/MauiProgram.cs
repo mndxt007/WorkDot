@@ -6,6 +6,7 @@ using Microsoft.SemanticKernel;
 using MudBlazor.Services;
 using Plugin.Maui.Audio;
 using System.Reflection;
+using WorkDot.Services;
 using WorkDot.Services.Common;
 using WorkDot.Services.Presentation;
 using WorkDot.Services.Utilities;
@@ -67,12 +68,7 @@ namespace WorkDot
                 return speechConfig;
             });
 
-            services.AddKernel().Plugins.AddFromType<KernelPlugins>("functions");
-            services.AddAzureOpenAIChatCompletion(
-                     deploymentName: config["OpenAI:Deployment"]!,
-                     endpoint: config["OpenAI:Endpoint"]!,
-                     apiKey: config["OpenAI:Key"]!);
-
+            services.AddWorkDotService(config);
             services.AddMudServices();
             services.AddBlazoredLocalStorage();
             services.AddScoped<LayoutService>();

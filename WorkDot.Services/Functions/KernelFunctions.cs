@@ -1,13 +1,11 @@
-﻿using Microsoft.Kiota.Abstractions.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using WorkDot.Api.Models;
-using WorkDot.Api.Services;
+using WorkDot.Services.Models;
+using WorkDot.Services.Services;
 
-namespace AiChatApi.KernelPlugins
+namespace WorkDot.Services.Functions
 {
     public class KernelFunctions
     {
@@ -32,7 +30,7 @@ namespace AiChatApi.KernelPlugins
                 var _graphService = scope.ServiceProvider.GetRequiredService<GraphService>();
                 var _kernel = scope.ServiceProvider.GetRequiredService<Kernel>();
                 var messages = await _graphService.GetUserEmailsWithRawQueryAsync(queryParmeter);
-                if(messages.Count == 0)
+                if (messages.Count == 0)
                 {
                     return new WidgetModel()
                     {
@@ -57,7 +55,7 @@ namespace AiChatApi.KernelPlugins
                         Widget = WidgetType.Plan,
                         Payload = plans
                     };
-                } 
+                }
             }
         }
 
@@ -69,7 +67,7 @@ namespace AiChatApi.KernelPlugins
             {
                 var _graphService = scope.ServiceProvider.GetRequiredService<GraphService>();
                 var _kernel = scope.ServiceProvider.GetRequiredService<Kernel>();
-                var tasks = await _graphService.GetUserTasksWithRawQueryAsync(toDoList,queryParams);
+                var tasks = await _graphService.GetUserTasksWithRawQueryAsync(toDoList, queryParams);
                 if (tasks.Count == 0)
                 {
                     return new WidgetModel()

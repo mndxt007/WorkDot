@@ -79,6 +79,10 @@
 		<PackageReference Include="Microsoft.SemanticKernel" Version="1.17.2" />
 		<PackageReference Include="Plugin.Maui.Audio" Version="3.0.0" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\WorkDot.Services\WorkDot.Services.csproj" />
+    </ItemGroup>
 	
 	<ItemGroup>
 		<Reference Include="Microsoft.Office.Interop.Outlook">
