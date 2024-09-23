@@ -8,6 +8,7 @@
 
     public enum WidgetType
     {
+        None,
         Chat,
         Plan,
         Todo,

@@ -9,34 +9,48 @@
 @inject ChatCompletionService chatService
 @inject ISnackbar Snackbar
 
-<div class="d-flex flex-column align-center mt-5">
-    <button class="record-button @((isListening) ? "active" : "")"
-            @onclick="StartRecording"
-            disabled="@isListening">
-        <MudIcon Icon="@Icons.Material.Filled.MicNone" Title="Mic" Size="Size.Large" />
-    </button>
-    @if (currentWidget == WidgetType.Plan)
+
+<MudGrid Justify="Justify.Center">
+    @if (currentWidget == WidgetType.None)
     {
-        <PlanPlugin PlanModels="widgetData as List<PlanModel>" />
+        <MudItem xs="12" md="12" lg="12">
+            <MudText Typo="Typo.h3" Align="Align.Center">Welcome to WorkDot</MudText>
+            <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mud-text-secondary">
+                Your AI-powered assistant for Work.
+            </MudText>
+        </MudItem>
     }
-    else if (currentWidget == WidgetType.Todo)
-    {
-        <TodoPlugin TodoItems="widgetData as List<TodoItem>" />
-    }
-    else if (currentWidget == WidgetType.Chat)
-    {
+    <MudItem xs="12" md="12" lg="12">
+        <div class="d-flex flex-column align-center mt-5">
+            <button class="record-button @((isListening) ? "active" : "")"
+                    @onclick="StartRecording"
+                    disabled="@isListening">
+                <MudIcon Icon="@Icons.Material.Filled.MicNone" Title="Mic" Size="Size.Large" />
+            </button>
+        </div>
         <ChatPlugin Conversation="conversation" />
-    }
-    else
-    {
-        <MudText>Oops...Something went wrong..</MudText>
-    }
-</div>
+
+        @if (isProcessing)
+        {
+            <PluginSkeleton />
+        }
+        else if (currentWidget == WidgetType.Plan)
+        {
+            <PlanPlugin PlanModels="widgetData" />
+        }
+        else if (currentWidget == WidgetType.Todo)
+        {
+            <TodoPlugin TodoItems="widgetData" />
+        }
+    </MudItem>
+</MudGrid>
+
 
 @code {
     private List<ChatMessageModel> conversation = new();
     private bool isListening { get; set; } = false;
-    private WidgetType currentWidget = WidgetType.Chat;
+    private bool isProcessing { get; set; } = false;
+    private WidgetType currentWidget = WidgetType.None;
     private object widgetData = default!;
 
     public async void StartRecording()
@@ -56,16 +70,23 @@
             try
             {
                 var result = await speechRecognizer.RecognizeOnceAsync();
+                isListening = false;
+                isProcessing = true;
                 conversation.Add(new ChatMessageModel() { Source = "U", Text = result.Text });
+                StateHasChanged();
+
                 var response = await chatService.GetResponseAsync(result.Text);
                 ProcessResponse(response);
+                isProcessing = false;
+                StateHasChanged();
             }
             catch (System.Exception ex)
             {
+                isProcessing = false;
+                isListening = false;
                 Console.WriteLine(ex);
             }
 
-            isListening = false;
             StateHasChanged();
         }
     }

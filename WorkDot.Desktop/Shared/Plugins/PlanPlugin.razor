@@ -1,37 +1,68 @@
-﻿@using WorkDot.Services.Models
+﻿@using System.Text.Json
+@using WorkDot.Services.Models
 @using MudBlazor
 
-<h3>Email Plugin</h3>
-
-@if (PlanModels is not null)
-{
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
     <MudGrid>
-        @foreach (var plan in PlanModels)
+        @foreach (var plan in plans)
         {
-            <MudItem xs="12" sm="6" md="4" lg="3">
-                <MudCard>
+            <MudItem xs="12" Class="my-4">
+                <MudCard Elevation="2" Class="mud-background-gray rounded-xl py-4">
                     <MudCardHeader>
-                        <MudText Typo="Typo.h6">@plan.Priority</MudText>
-                        <MudText Typo="Typo.caption">@plan.Action)</MudText>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h5" Align="Align.Center">@plan?.Message.Subject</MudText>
+                            <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mud-text-muted">@plan?.Message.ReceivedDateTime</MudText>
+                        </CardHeaderContent>
                     </MudCardHeader>
-
                     <MudCardContent>
-                        <MudText Typo="Typo.body2">
-                            @plan.Response
-                        </MudText>
+                        <MudGrid>
+                            <MudItem xs="4">
+                                <DetailCard Title="Action" Value="@plan?.Action" Icon="@Icons.Material.Filled.TaskAlt" IconColor="Color.Success" />
+                            </MudItem>
+                            <MudItem xs="4">
+                                <DetailCard Title="Sentiment" Value="@plan?.Sentiment" Icon="@Icons.Material.Filled.Favorite" IconColor="Color.Error" />
+                            </MudItem>
+                            <MudItem xs="4">
+                                <DetailCard Title="Priority" Value="@plan?.Priority.ToString()" Icon="@Icons.Material.Filled.WarningAmber" IconColor="Color.Warning" />
+                            </MudItem>
+                        </MudGrid>
 
-                        <MudDivider Class="my-2" />
+                        <MudCard Elevation="2" Class="my-6 rounded-xl pa-4">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h5" Class="mb-6">Suggested Response</MudText>
+                                @if (!string.IsNullOrEmpty(plan.Response))
+                                {
+                                    <pre>@plan?.Response</pre>
+                                }
+                                <MudGrid Justify="Justify.FlexEnd" Class="my-8">
+                                    <MudItem>
+                                        <Clipboard TextToCopy="@plan?.Response" />
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <MudGrid Justify="Justify.Center" Class="mt-2">
+                            <MudItem>
+                                <MudButton Href="https://google.com" Target="_blank" Color="Color.Primary" Variant="Variant.Filled">Open Email</MudButton>
+                            </MudItem>
+                        </MudGrid>
                     </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Color="Color.Primary" Variant="Variant.Text">Open</MudButton>
-                    </MudCardActions>
                 </MudCard>
             </MudItem>
         }
     </MudGrid>
-}
+</MudContainer>
+
 
 @code {
     [Parameter]
-    public List<PlanModel> PlanModels { get; set; } = new();
+    public object PlanModels { get; set; } = new();
+    private List<PlanModel> plans = new();
+
+    override protected void OnInitialized()
+    {
+        plans = JsonSerializer.Deserialize<List<PlanModel>>(PlanModels?.ToString()!)!;
+        base.OnInitialized();
+    }
 }

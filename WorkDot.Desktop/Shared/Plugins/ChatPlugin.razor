@@ -2,25 +2,35 @@
 
 @if (Conversation.Count > 0)
 {
-    <MudPaper Elevation="0" Class="pa-4 overflow-y-auto my-6 chatpane">
+    <MudItem Class="pa-4 overflow-y-auto mt-6">
         @foreach (var item in Conversation)
         {
-            <MudPaper Elevation="0" Class="mb-3 pa-3 d-inline-flex">
-                <MudStack Row="true">
-                    <MudAvatar Size="Size.Medium" Variant="Variant.Filled">
+            <MudPaper Class="@(GetStyle(item.Source!))">
+                <MudItem Style="display:flex;align-items:center;justify-content:flex-start;">
+                    <MudAvatar Size="Size.Medium" Variant="Variant.Filled" Class="mx-4" Color="Color.Primary">
                         <MudIcon Icon="@(string.Equals(item.Source, "U") ? Icons.Material.Filled.Person3 : Icons.Material.Filled.AutoAwesome)" />
                     </MudAvatar>
                     <MudStack Justify="Justify.Center" Spacing="0">
                         <pre>@item.Text</pre>
                     </MudStack>
-                </MudStack>
+                </MudItem>
             </MudPaper>
             <br />
         }
-    </MudPaper>
+    </MudItem>
 }
 
 @code {
-    [Parameter]
-    public List<ChatMessageModel> Conversation { get; set; } = new();
+    @code {
+        [Parameter]
+        public List<ChatMessageModel> Conversation { get; set; } = new();
+
+        private const string UserStyle = "mb-3 pa-3 d-inline-flex flex-row-reverse justify-content-end mud-background-gray rounded-xl pa-4";
+        private const string AssistantStyle = "mb-3 pa-3 d-inline-flex rounded-xl pa-4";
+
+        private string GetStyle(string source)
+        {
+            return string.Equals(source, "U", StringComparison.OrdinalIgnoreCase) ? UserStyle : AssistantStyle;
+        }
+    }
 }

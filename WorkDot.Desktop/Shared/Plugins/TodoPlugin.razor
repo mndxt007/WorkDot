@@ -1,33 +1,72 @@
-﻿@using WorkDot.Services.Models
+﻿@using System.Text.Json
+@using WorkDot.Services.Models
 @using MudBlazor
 
-<h3>Todo Plugin</h3>
-
-<MudGrid>
-    @foreach (var todo in TodoItems)
-    {
-        <MudItem xs="12" sm="6" md="4" lg="3">
-            <MudCard>
-                <MudCardHeader>
-                    <MudText Typo="Typo.h6">@todo.Title</MudText>
-                    <MudText Typo="Typo.caption">Due: @todo.DueDateTime.ToString("g")</MudText>
-                </MudCardHeader>
-
-                <MudCardContent>
-                    <MudText Typo="Typo.body2">
-                        Status: @todo.Status
-                    </MudText>
-                </MudCardContent>
-
-                <MudCardActions>
-                    <MudButton Color="Color.Primary" Variant="Variant.Text">Details</MudButton>
-                </MudCardActions>
-            </MudCard>
-        </MudItem>
-    }
-</MudGrid>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+    <MudGrid>
+        @foreach (var todo in todoItems)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudCard Elevation="3" Class="rounded-lg">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@todo.Title</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudChip T="string" Color="@GetStatusColor(todo.Status)" Size="Size.Small" Class="mt-2" Variant="Variant.Text" Style="margin-top:revert">@GetStatusName(todo.Status)</MudChip>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudItem Style="display:flex;align-items:center;justify-content:flex-start;">
+                            <MudIcon Icon="@Icons.Material.Filled.AccessTime" Class="mr-3" Size="Size.Large" />
+                            <MudText Typo="Typo.body1"> Due Date: @todo.DueDateTime.ToString("MMM dd, yyyy HH:mm")</MudText>
+                        </MudItem>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton StartIcon="@Icons.Material.Filled.Visibility" FullWidth="true" Color="Color.Default" Variant="Variant.Outlined" Class="rounded-lg">
+                            View Details
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+</MudContainer>
 
 @code {
     [Parameter]
-    public List<TodoItem> TodoItems { get; set; } = new List<TodoItem>();
+    public object TodoItems { get; set; } = new List<TodoItem>();
+    private List<TodoItem> todoItems = new();
+
+    protected override void OnInitialized()
+    {
+        todoItems = JsonSerializer.Deserialize<List<TodoItem>>(TodoItems?.ToString()!)!;
+        base.OnInitialized();
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status.ToLower() switch
+        {
+            "notstarted" => Color.Warning,
+            "inprogress" => Color.Info,
+            "completed" => Color.Success,
+            "waitingonothers" => Color.Secondary,
+            "deferred" => Color.Dark,
+            _ => Color.Default,
+        };
+    }
+
+    private string GetStatusName(string status)
+    {
+        return status.ToLower() switch
+        {
+            "notstarted" => "Not Started",
+            "inprogress" => "In Progress",
+            "completed" => "Completed",
+            "waitingonothers" => "Waiting on Others",
+            "deferred" => "Deferred",
+            _ => "Unknown",
+        };
+    }
 }
