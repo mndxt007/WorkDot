@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
+using Microsoft.Extensions.Primitives;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using NAudio.Wave;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
+using WorkDot.Services.Models;
 using WorkDot.Services.Services;
 
 namespace WorkDot.Api.Controllers
@@ -24,6 +27,7 @@ namespace WorkDot.Api.Controllers
         private int offset = 44;
         private AudioStreamFormat format;
         private StringBuilder stringBuilder = new();
+        private bool isArduino=false;
 
         public SpeechController(
             IConfiguration configuration,
@@ -58,6 +62,7 @@ namespace WorkDot.Api.Controllers
                 int delay;
                 if (userAgent == "arduino-WebSocket-Client")
                 {
+                    isArduino = true;
                     format = AudioStreamFormat.GetWaveFormatPCM(16000, 16, 1);
                     delay = 200;
                 }
@@ -124,12 +129,14 @@ namespace WorkDot.Api.Controllers
             // Commenting for Debug
           var completion = GetChatCompletion(recognizedText);
           stringBuilder.Remove(0,stringBuilder.Length);
-           await foreach (var item in completion)
+            var screenChange = false;
+            await foreach (var item in completion)
           {
                 if(item.Content == null)
                 {
                     continue;
                 }
+
               await webSocket.SendAsync(item.ToByteArray(), WebSocketMessageType.Text, true, CancellationToken.None);
               stringBuilder.Append(item.Content);
               await Task.Delay(delay);
@@ -138,6 +145,12 @@ namespace WorkDot.Api.Controllers
           if(stringBuilder.Length <= 0)
             {
                 //assuming tool call result is present
+                if(isArduino)
+                {
+                    var WidgetResult = JsonSerializer.Deserialize<WidgetModel>(_chatHistory.LastOrDefault()?.Content!);
+                    await webSocket.SendAsync(Encoding.UTF8.GetBytes(WidgetResult!.Widget.ToString()), WebSocketMessageType.Binary, true, CancellationToken.None);
+
+                }
                 await webSocket.SendAsync(Encoding.UTF8.GetBytes(_chatHistory.LastOrDefault()?.Content!), WebSocketMessageType.Text, true, CancellationToken.None); 
                 //_chatHistory.Remove(_chatHistory.LastOrDefault()!);
             }

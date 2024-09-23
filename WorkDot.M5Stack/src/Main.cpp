@@ -32,6 +32,7 @@ extern JsonDocument json;
 bool recording = false;
 SemaphoreHandle_t xMutex;
 QueueHandle_t payloadQueue;
+int activeScreen = 0; //Chat
 
 // Methods Declaration
 //===================
@@ -254,7 +255,11 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
         }
         break;
     case WStype_BIN:
-        // Handle binary data if needed
+        if (payload != nullptr && length == 1 && payload[0] >= 0 && payload[0] <= 9)
+        {
+            int activeScreen = payload[0];
+            M5.Log(ESP_LOG_INFO, "Active screen set to %d", activeScreen);
+        }
         break;
     case WStype_ERROR:
     case WStype_FRAGMENT_TEXT_START:
