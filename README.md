@@ -2,7 +2,7 @@
 
 WorkDot is a Embedded Device that enhances your work productivity with the power of AI.
 
-![Image of WorkDot](Resources/0.png)
+<img src="Resources/0.png" alt="drawing" width="600"/>
 
 ## Background:
 At the beginning of the year 2024, a new category of gadgets was introduced to the world – "Personal AI Devices." You might have come across innovations like the Rabbit R1 and Humane AI Pin. These devices promised to harness the power of AI through a “dedicated” and distraction-free platform, allowing users to get things done quickly. Imagine saying, “book a cab to the office,” and it’s handled in seconds. Tasks like ordering food, home automation, booking hotels, tickets, and countless other integrations were made possible through natural language interaction. Naturally, these devices also featured general AI chat capabilities.
@@ -25,7 +25,12 @@ Desktop App:
 ![Desktop Companion](Resources/3.png)
 
 ## Demo
-![](./Resources/Work.mp4)
+
+<video controls width="600">
+  <source src="https://raw.githubusercontent.com/mndxt007/WorkDot/master/Resources/Work.mp4" type="video/mp4">
+</video>
+
+https://raw.githubusercontent.com/mndxt007/WorkDot/master/Resources/Work.mp4
 
 ## Extra Details for Hackers/DIYers out there:
 
