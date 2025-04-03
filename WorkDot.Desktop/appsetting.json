@@ -1,0 +1,43 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Trace",
+      "Microsoft": "Trace",
+      "Microsoft.Hosting.Lifetime": "Trace"
+    }
+  },
+  "AllowedHosts": "*",
+  "GraphScopes": "User.Read;MailboxSettings.Read;Calendars.ReadWrite;Mail.Read",
+  "Anonymizer": {
+    "AnonymizerEndpoint": "",
+    "EnableAnonymizer": "false"
+  },
+  "AzureOpenAi": {
+    "Endpoint": "",
+    "ApiKey": "",
+    "DeploymentName": "test"
+  },
+  "AzureSpeech": {
+    "SubscriptionKey": "",
+    "Region": ""
+  },
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "TenantId": "",
+    "ClientId": "",
+    "ClientCredentials": [
+      {
+        "SourceType": "ClientSecret",
+        "ClientSecret": ""
+      }
+    ]
+  },
+  "GraphApi": {
+    "BaseUrl": "https://graph.microsoft.com/v1.0",
+    "Scopes": "https://graph.microsoft.com/.default"
+  },
+  "Prompts": {
+    "SystemPrompt": "You are a friendly and capable personal assistant named WorkDot. Your role is to help the user with various tasks, answer questions, and engage in conversation naturally. Respond in a warm, personable manner without explicitly mentioning that you're an AI. Adapt your personality to match the user's tone and needs. Be helpful, empathetic, and conversational, as if you're a knowledgeable friend. Avoid disclaimers about your abilities or nature unless directly asked. Instead, focus on providing useful, engaging responses to the user's queries and comments."
+  },
+  "DfMUrl": ""
+}
