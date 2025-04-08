@@ -1,72 +1,126 @@
 # WorkDot
 
-WorkDot is a Embedded Device that enhances your work productivity with the power of AI.
+**WorkDot** is a compact AI-powered embedded device designed to supercharge your productivity by simplifying the way you manage tasks, emails, meetings, and more—hands-free and distraction-free.
 
-![Image of WorkDot](Resources/0.png)
+![WorkDot Device](Resources/0.png)
 
-## Background:
-At the beginning of the year 2024, a new category of gadgets was introduced to the world – "Personal AI Devices." You might have come across innovations like the Rabbit R1 and Humane AI Pin. These devices promised to harness the power of AI through a “dedicated” and distraction-free platform, allowing users to get things done quickly. Imagine saying, “book a cab to the office,” and it’s handled in seconds. Tasks like ordering food, home automation, booking hotels, tickets, and countless other integrations were made possible through natural language interaction. Naturally, these devices also featured general AI chat capabilities.
+---
 
-This new category garnered a lot of attention for its potential. As a working professionals (and an Embedded System Enthusiast), we thought, why not create a similar device dedicated to work? Imagine commands like, “Schedule a meeting with a colleague,” “Analyze emails,” or “show me my to-do list.”
+## 🚀 Overview
 
-At the time of Development, Co-pilot/AI chat applications are still unavailable for platforms like Android Wear OS, presenting an exciting opportunity to explore how AI can empower compact, low-resource devices to efficiently perform work-related tasks with the same intelligence.
+In early 2024, the tech landscape saw the emergence of a new wave of "Personal AI Devices"—innovations like the Rabbit R1 and Humane AI Pin. These devices promised seamless, natural-language interactions for everyday tasks like ordering food, booking cabs, or controlling smart homes.
 
+**But what about work?**
 
-## Solution:
-* WorkDot is an innovative embedded device designed to leverage AI for managing work data such as emails, to-do lists, and meetings.
-* Despite its limited hardware resources (4 MB RAM), WorkDot connects to a cloud server to execute AI-powered voice commands. It can swiftly skim through vast amounts of work-related data, prioritize tasks, and deliver information in a distraction-free environment.
-* Imagine you are in a Cab and say – “Plan my work today” and device shows of all your tasks prioritized, summarized, and presented in way you can catch up with all the items you need to do for the day. 
-* Comes with a Desktop companion for setup and reviewing conversation history.
+As working professionals and embedded systems enthusiasts, we envisioned a device tailored specifically for workplace productivity. Enter **WorkDot**—an embedded AI device that fits in your palm and transforms how you plan your day, manage emails, and interact with your work data.
 
-Glimpse of the UI Project:
-![UI Design](Resources/2.png)
+---
 
-Desktop App:
-![Desktop Companion](Resources/3.png)
+## 🧠 What It Does
 
-## Demo
+**WorkDot** acts as your personal work assistant by:
+
+- Processing voice commands to manage emails, meetings, to-do lists, and schedules.
+- Summarizing and prioritizing tasks with AI intelligence.
+- Delivering an immersive, screen-based experience—no phone, no distractions.
+- Syncing seamlessly with a desktop companion app for setup and history tracking.
+
+> _Say: “Plan my work today” — and instantly get a curated, AI-summarized view of your day._
+
+---
+
+## 🌟 Features
+
+- 📡 **Cloud-Connected AI**: Utilizes cloud infrastructure to offload heavy AI computation.
+- 🧠 **Smart Voice Interface**: Responds to natural language commands.
+- 🧭 **Task Management**: Prioritizes and displays your day’s agenda with summaries.
+- 🖥️ **Desktop Companion App**: For easy setup and reviewing past conversations.
+- 🪶 **Minimalist UI**: Designed for quick insights, not distractions.
+
+![UI Preview](Resources/2.png)  
+![Desktop App](Resources/3.png)
+
+---
+
+## 🎥 Demo
+
+Watch it in action:  
 ![](./Resources/Work.mp4)
+#### [Direct Link](https://raw.githubusercontent.com/mndxt007/WorkDot/master/resources/work.mp4)
 
-## Extra Details for Hackers/DIYers out there:
+---
 
-* We chose to use the [M5Stack Core2 ESP32 IoT Development Kit | m5stack-store](https://shop.m5stack.com/products/m5stack-core2-esp32-iot-development-kit) which is a module comes bundled with most hardware needed for such a device:
-    -   [ESP32](https://shop.m5stack.com/)-based, built-in Bluetooth/Wi-Fi
-    -   16M Flash,8M PSRAM (sounds very less isn't it 😊)
-    -   Built-in speaker, power indicator, vibration motor, RTC, I2S amplifier, capacitive touch screen, power button, reset button
-    -   TF card slot (16G Maximum size)
-    -   Built-in lithium battery, equipped with power management chip
--   Building the embedded software was a huge challenge. Recording the audio while simultaneous sending the chucks to Web socket, learnt a lot about Embedded Software. Some of the key takeaways:
-    -   Web Socket Protocol (especially continuation frames) - [RFC 6455 - The WebSocket Protocol (ietf.org)](https://datatracker.ietf.org/doc/html/rfc6455#section-5.2)
-        -   Had to modify the library code to support this -- [WebSocketsClient.cpp](./WorkDot.M5Stack/src/WebSockets/WebSockets.cpp)
-    -   Using Tasks in RTOS:
-            -   [FreeRTOS - ESP32 - --- ESP-IDF Programming Guide v4.3 documentation (espressif.com)](https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32/api-reference/system/freertos.html)
-            -   [RTOS Fundamentals - FreeRTOS™](https://www.freertos.org/Documentation/01-FreeRTOS-quick-start/01-Beginners-guide/01-RTOS-fundamentals)
-            -   [Main.cpp)](./WorkDot.M5Stack/src/Main.cpp)
-        -   Using Task Synchronization:
-        -   [xSemaphoreTake - FreeRTOS™](https://www.freertos.org/Documentation/02-Kernel/04-API-references/10-Semaphore-and-Mutexes/12-xSemaphoreTake)
-        -   [FreeRTOS - ESP32 - --- ESP-IDF Programming Guide v5.0 documentation (espressif.com)](https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32/api-reference/system/freertos.html#queue-api)
-    -   UI Library for Embedded Systems:
-        -   [LVGL --- Light and Versatile Embedded Graphics Library](https://lvgl.io/)
-        -   Using SquareLine Studio + Figma as UI Development Tool (paid tool offers 30 day trail) - [SquareLine Studio - Design and build UIs with ease](https://squareline.io/)
+## 🔧 For Hackers & DIYers
 
+We built WorkDot using the [**M5Stack Core2 ESP32 IoT Development Kit**](https://shop.m5stack.com/products/m5stack-core2-esp32-iot-development-kit), chosen for its robust feature set in a compact form:
 
--   Now of course, the backend needs to the heavy lifting:
-    -   Asp.Net WebSockets - [WebSockets support in ASP.NET Core | Microsoft Learn](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/websockets?view=aspnetcore-8.0)
-    -   Speech SDK for Speech to Text - [About the Speech SDK - Speech service - Azure AI services | Microsoft Learn](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-sdk)
-    -   Semantic Kernel for AI Orchestration - [Function calling with chat completion | Microsoft Learn](https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/chat-completion/function-calling/?pivots=programming-language-csharp)
-    -   Graph SDK for retrieving data - [Microsoft Graph SDK overview - Microsoft Graph | Microsoft Learn](https://learn.microsoft.com/en-us/graph/sdks/sdks-overview)
-    -   Projects:
-        -   Services - [WorkDot.Services](./WorkDot.Services/)
-        -   Backend API - [WorkDot.Api](./WorkDot.Api/)
-        -   MAUI Based Desktop Companion - [WorkDot.Desktop](./WorkDot.Desktop/)
+### 🛠️ Hardware Highlights
 
-## Impact:
-* By introducing AI capabilities to minimal hardware, WorkDot showcases the potential of embedded devices to significantly improve productivity.
-* It allows users to interact with their work data in a seamless, hands-free manner, making complex task management more intuitive and accessible.
-* This opens up new possibilities for expanding AI’s reach to a wider array of devices, including wearable technology, and demonstrates how AI can enhance even the most resource-constrained platforms.
+- ESP32 with built-in Wi-Fi/Bluetooth  
+- 16MB Flash, 8MB PSRAM  
+- Capacitive touchscreen, speaker, vibration motor  
+- Battery + power management  
+- TF card slot (up to 16GB)
 
-## Future
-* The next steps involve refining the WorkDot’s AI capabilities to process a broader range of work data sources, improving voice recognition accuracy, and optimizing the desktop companion for better integration with third-party applications.
-* Additionally, expanding its customizable widgets and ensuring compatibility with more enterprise software platforms will further increase the device’s utility in diverse work environments.
+### 🧑‍💻 Embedded Development Takeaways
 
+Building real-time voice interaction on a 4MB RAM device was no small feat! Some key learnings:
 
+- 🔁 **WebSocket Continuation Frames**  
+  - [RFC 6455](https://datatracker.ietf.org/doc/html/rfc6455#section-5.2)  
+  - Custom implementation to stream audio using continuation frames  
+  - [WebSocketsClient.cpp](./WorkDot.M5Stack/src/WebSockets/WebSockets.cpp)
+
+- ⏱️ **RTOS Task Management & Sync**  
+  - Used FreeRTOS tasks, semaphores, and queues for async operations  
+  - [Main.cpp](./WorkDot.M5Stack/src/Main.cpp)  
+  - [ESP-IDF RTOS Guide](https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32/api-reference/system/freertos.html)
+
+- 🖼️ **UI on Embedded Systems**  
+  - Built with [LVGL](https://lvgl.io/)  
+  - Designed using [SquareLine Studio](https://squareline.io/) (Figma-compatible)
+
+---
+
+## 🧩 Backend & Services
+
+While the device handles UI and audio capture, the heavy lifting is done in the cloud:
+
+- 🎤 **Speech to Text**: [Azure Speech SDK](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-sdk)
+- 🧠 **AI Orchestration**: [Microsoft Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/)
+- 📅 **Data Access**: [Microsoft Graph SDK](https://learn.microsoft.com/en-us/graph/sdks/sdks-overview)
+- 🌐 **ASP.NET Core WebSocket Backend**
+  - [WorkDot.Api](./WorkDot.Api/)
+  - [WorkDot.Services](./WorkDot.Services/)
+  - [WorkDot.Desktop](./WorkDot.Desktop/) (built with .NET MAUI)
+
+---
+
+## 🌍 Impact
+
+WorkDot demonstrates the remarkable potential of bringing AI to the edge:
+
+- Enables productivity on ultra-lightweight hardware.
+- Unlocks hands-free, natural interaction with work data.
+- Paves the way for AI-powered wearables and other embedded devices.
+
+---
+
+## 🔮 Future Directions
+
+- Improve voice recognition accuracy and latency.
+- Broaden integrations (e.g., Slack, Trello, Jira, Outlook).
+- Expand UI customization with smart widgets.
+- Enhance enterprise compatibility and data security.
+
+---
+
+## 🛠️ Project Structure
+
+```bash
+WorkDot/
+├── WorkDot.M5Stack/      # Embedded firmware (ESP32)
+├── WorkDot.Api/          # Backend Web API (ASP.NET Core)
+├── WorkDot.Services/     # Cloud orchestration & AI logic
+├── WorkDot.Desktop/      # Desktop companion app (MAUI)
+└── Resources/            # Images, demo videos, assets
